@@ -1,0 +1,17 @@
+.{
+    .name = .sdl3,
+    .version = "3.2.16",
+    .fingerprint = 0x6188f62fe47b1453, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.15.1",
+    .dependencies = .{
+        .sdl = .{
+            .url = "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.16.tar.gz",
+            .hash = "N-V-__8AAC7RiwMhNNBUILz2Wm1bR5fl2kIqyDA8KCQNrI4K",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+    },
+}
