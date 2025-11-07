@@ -1310,17 +1310,6 @@ pub fn build(b: *std.Build) void {
 
     lib.installHeadersDirectory(sdl_dep.path("include/SDL3"), "SDL3", .{});
     b.installArtifact(lib);
-
-    const translate = b.addTranslateC(.{
-        .root_source_file = sdl_dep.path("include/SDL3/SDL.h"),
-        .target = target,
-        .optimize = optimize,
-    });
-    translate.addIncludePath(sdl_dep.path("include"));
-    translate.addConfigHeader(config_header_h);
-    const mod = translate.addModule("sdl3");
-
-    mod.linkLibrary(lib);
 }
 
 const common_sources = .{
