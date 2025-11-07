@@ -1370,7 +1370,6 @@ const common_sources = .{
     "main/SDL_runapp.c",
     "misc/SDL_url.c",
     "power/SDL_power.c",
-    "render/SDL_d3dmath.c",
     "render/SDL_render_unsupported.c",
     "render/SDL_render.c",
     "render/SDL_yuv_sw.c",

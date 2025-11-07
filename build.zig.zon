@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.15.1",
     .dependencies = .{
         .sdl = .{
-            .url = "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.16.tar.gz",
-            .hash = "N-V-__8AAC7RiwMhNNBUILz2Wm1bR5fl2kIqyDA8KCQNrI4K",
+            .url = "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.26.tar.gz",
+            .hash = "N-V-__8AAH6GjAPdfAbJaCvgcvc3AcVlINdg2ufslfY_c-xJ",
         },
     },
     .paths = .{
