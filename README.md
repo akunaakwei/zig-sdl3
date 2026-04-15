@@ -1,2 +1,2 @@
-# sdl3
-This is SDL3 packaged for the zig build system.
+# SDL3
+This is [SDL3](https://github.com/libsdl-org/SDL) packaged for the zig build system.

@@ -646,68 +646,60 @@ pub fn build(b: *std.Build) void {
         },
     );
 
-    const uclibc = b.addLibrary(.{
-        .name = "uclibc",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = false,
-        }),
+    const uclibc_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = false,
     });
-    uclibc.addIncludePath(sdl_dep.path("include"));
-    uclibc.addIncludePath(sdl_dep.path("src"));
-    uclibc.addConfigHeader(config_header_h);
-    uclibc.addCSourceFiles(.{
+    uclibc_mod.addIncludePath(sdl_dep.path("include"));
+    uclibc_mod.addIncludePath(sdl_dep.path("src"));
+    uclibc_mod.addConfigHeader(config_header_h);
+    uclibc_mod.addCSourceFiles(.{
         .root = sdl_dep.path("src"),
         .files = &uclibc_sources,
         .flags = &flags,
     });
+    const uclibc = b.addLibrary(.{
+        .name = "uclibc",
+        .root_module = uclibc_mod,
+    });
 
-    const lib = b.addLibrary(.{
-        .name = "sdl3",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = libc,
-        }),
-        .linkage = linkage,
+    const mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = libc,
     });
     if (!libc) {
-        lib.linkLibrary(uclibc);
+        mod.linkLibrary(uclibc);
     }
-    lib.addIncludePath(sdl_dep.path("include"));
-    lib.addIncludePath(sdl_dep.path("src"));
-    lib.addConfigHeader(config_header_h);
-
-    if (linkage == .dynamic) {
-        lib.setVersionScript(sdl_dep.path("src/dynapi/SDL_dynapi.sym"));
-        lib.linker_allow_undefined_version = true;
-    }
+    mod.addIncludePath(sdl_dep.path("include"));
+    mod.addIncludePath(sdl_dep.path("src"));
+    mod.addConfigHeader(config_header_h);
 
     if (windows) {
-        lib.linkSystemLibrary("kernel32");
-        lib.linkSystemLibrary("user32");
-        lib.linkSystemLibrary("gdi32");
-        lib.linkSystemLibrary("winmm");
-        lib.linkSystemLibrary("imm32");
-        lib.linkSystemLibrary("ole32");
-        lib.linkSystemLibrary("oleaut32");
-        lib.linkSystemLibrary("version");
-        lib.linkSystemLibrary("uuid");
-        lib.linkSystemLibrary("advapi32");
-        lib.linkSystemLibrary("setupapi");
-        lib.linkSystemLibrary("shell32");
-        lib.linkSystemLibrary("dinput8");
+        mod.linkSystemLibrary("kernel32", .{});
+        mod.linkSystemLibrary("user32", .{});
+        mod.linkSystemLibrary("gdi32", .{});
+        mod.linkSystemLibrary("winmm", .{});
+        mod.linkSystemLibrary("imm32", .{});
+        mod.linkSystemLibrary("ole32", .{});
+        mod.linkSystemLibrary("oleaut32", .{});
+        mod.linkSystemLibrary("version", .{});
+        mod.linkSystemLibrary("uuid", .{});
+        mod.linkSystemLibrary("advapi32", .{});
+        mod.linkSystemLibrary("setupapi", .{});
+        mod.linkSystemLibrary("shell32", .{});
+        mod.linkSystemLibrary("dinput8", .{});
     }
 
-    lib.addCSourceFiles(.{
+    mod.addCSourceFiles(.{
         .root = sdl_dep.path("src"),
         .files = &common_sources,
         .flags = &flags,
     });
 
     if (windows) {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src"),
             .files = &windows_sources,
             .flags = &flags,
@@ -715,7 +707,7 @@ pub fn build(b: *std.Build) void {
     }
 
     if (linux) {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src"),
             .files = &linux_sources,
             .flags = &flags,
@@ -723,7 +715,7 @@ pub fn build(b: *std.Build) void {
     }
 
     if (apple) {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src"),
             .files = &apple_sources,
             .flags = &flags,
@@ -731,7 +723,7 @@ pub fn build(b: *std.Build) void {
     }
 
     if (pthreads) {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src/thread/pthread"),
             .files = &.{
                 "SDL_systhread.c",
@@ -744,7 +736,7 @@ pub fn build(b: *std.Build) void {
             .flags = &flags,
         });
     } else if (windows) {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src/thread"),
             .files = &.{
                 "windows/SDL_syscond_cv.c",
@@ -759,7 +751,7 @@ pub fn build(b: *std.Build) void {
             .flags = &flags,
         });
     } else {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src/thread/generic"),
             .files = &.{
                 "SDL_syscond.c",
@@ -775,7 +767,7 @@ pub fn build(b: *std.Build) void {
 
     if (joystick) {
         if (hidapi_joystick) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/joystick/hidapi"),
                 .files = &.{
                     "SDL_hidapi_combined.c",
@@ -801,14 +793,14 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (virtual_joystick) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/joystick/virtual"),
                 .files = &.{"SDL_virtualjoystick.c"},
                 .flags = &flags,
             });
         }
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/joystick/windows"),
                 .files = &.{
                     "SDL_dinputjoystick.c",
@@ -821,14 +813,14 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (linux) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/joystick/linux"),
                 .files = &.{"SDL_sysjoystick.c"},
                 .flags = &flags,
             });
         }
         if (apple) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/joystick"),
                 .files = &.{
                     "apple/SDL_mfijoystick.m",
@@ -836,7 +828,7 @@ pub fn build(b: *std.Build) void {
                 },
                 .flags = &flags,
             });
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/joystick/cocoa"),
                 .files = &.{"SDL_joystick_cocoa.m"},
                 .flags = &flags,
@@ -846,70 +838,70 @@ pub fn build(b: *std.Build) void {
 
     if (audio) {
         if (dummyaudio) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/dummy"),
                 .files = &.{"SDL_dummyaudio.c"},
                 .flags = &flags,
             });
         }
         if (wasapi) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/wasapi"),
                 .files = &.{"SDL_wasapi.c"},
                 .flags = &flags,
             });
         }
         if (diskaudio) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/disk"),
                 .files = &.{"SDL_diskaudio.c"},
                 .flags = &flags,
             });
         }
         if (alsa) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/alsa"),
                 .files = &.{"SDL_alsa_audio.c"},
                 .flags = &flags,
             });
         }
         if (jack) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/jack"),
                 .files = &.{"SDL_jackaudio.c"},
                 .flags = &flags,
             });
         }
         if (pipewire) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/pipewire"),
                 .files = &.{"SDL_pipewire.c"},
                 .flags = &flags,
             });
         }
         if (pulseaudio) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/pulseaudio"),
                 .files = &.{"SDL_pulseaudio.c"},
                 .flags = &flags,
             });
         }
         if (sndio) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/sndio"),
                 .files = &.{"SDL_sndioaudio.c"},
                 .flags = &flags,
             });
         }
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/directsound"),
                 .files = &.{"SDL_directsound.c"},
                 .flags = &flags,
             });
         }
         if (apple) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/audio/coreaudio"),
                 .files = &.{"SDL_coreaudio.m"},
                 .flags = &flags,
@@ -919,35 +911,35 @@ pub fn build(b: *std.Build) void {
 
     if (camera) {
         if (dummycamera) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/camera/dummy"),
                 .files = &.{"SDL_camera_dummy.c"},
                 .flags = &flags,
             });
         }
         if (pipewire) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/camera/pipewire"),
                 .files = &.{"SDL_camera_pipewire.c"},
                 .flags = &flags,
             });
         }
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/camera/mediafoundation"),
                 .files = &.{"SDL_camera_mediafoundation.c"},
                 .flags = &flags,
             });
         }
         if (linux) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/camera/v4l2"),
                 .files = &.{"/SDL_camera_v4l2.c"},
                 .flags = &flags,
             });
         }
         if (apple) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/camera/coremedia"),
                 .files = &.{"SDL_camera_coremedia.m"},
                 .flags = &flags,
@@ -957,7 +949,7 @@ pub fn build(b: *std.Build) void {
 
     if (video) {
         if (dummyvideo) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/dummy"),
                 .files = &.{
                     "SDL_nullevents.c",
@@ -968,7 +960,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (offscreen) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/offscreen"),
                 .files = &.{
                     "SDL_offscreenevents.c",
@@ -982,7 +974,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (cocoa) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/cocoa"),
                 .files = &.{
                     "SDL_cocoaclipboard.m",
@@ -1004,7 +996,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (x11) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/x11"),
                 .files = &.{
                     "SDL_x11clipboard.c",
@@ -1034,7 +1026,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (wayland) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/wayland"),
                 .files = &.{
                     "video/wayland/SDL_waylandclipboard.c",
@@ -1055,7 +1047,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (kmsdrm) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/kmsdrm"),
                 .files = &.{
                     "SDL_kmsdrmdyn.c",
@@ -1069,7 +1061,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/windows"),
                 .files = &.{
                     "SDL_surface_utils.c",
@@ -1095,14 +1087,14 @@ pub fn build(b: *std.Build) void {
     }
 
     if (!sensor) {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src/sensor/dummy"),
             .files = &.{"SDL_dummysensor.c"},
             .flags = &flags,
         });
     }
 
-    lib.addCSourceFiles(.{
+    mod.addCSourceFiles(.{
         .root = sdl_dep.path("src/dialog"),
         .files = &.{
             "SDL_dialog.c",
@@ -1112,7 +1104,7 @@ pub fn build(b: *std.Build) void {
     });
     if (dialog) {
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/dialog/windows"),
                 .files = &.{
                     "SDL_windowsdialog.c",
@@ -1121,14 +1113,14 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (apple) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/dialog/cocoa"),
                 .files = &.{"SDL_cocoadialog.m"},
                 .flags = &flags,
             });
         }
         if (linux) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/dialog/unix"),
                 .files = &.{
                     "SDL_unixdialog.c",
@@ -1139,7 +1131,7 @@ pub fn build(b: *std.Build) void {
             });
         }
     } else {
-        lib.addCSourceFiles(.{
+        mod.addCSourceFiles(.{
             .root = sdl_dep.path("src/dialog/dummy"),
             .files = &.{"SDL_dummydialog.c"},
             .flags = &flags,
@@ -1148,7 +1140,7 @@ pub fn build(b: *std.Build) void {
 
     if (gpu) {
         if (render_d3d12) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/gpu/d3d12"),
                 .files = &.{
                     "SDL_gpu_d3d12.c",
@@ -1157,7 +1149,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (vulkan) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/gpu/vulkan"),
                 .files = &.{
                     "SDL_gpu_vulkan.c",
@@ -1166,7 +1158,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (metal) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/gpu/metal"),
                 .files = &.{
                     "SDL_gpu_metal.m",
@@ -1178,7 +1170,7 @@ pub fn build(b: *std.Build) void {
 
     if (haptic) {
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/haptic/windows"),
                 .files = &.{
                     "SDL_dinputhaptic.c",
@@ -1188,14 +1180,14 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (linux) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/haptic/linux"),
                 .files = &.{"SDL_syshaptic.c"},
                 .flags = &flags,
             });
         }
         if (apple) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/haptic/darwin"),
                 .files = &.{"SDL_syshaptic.m"},
                 .flags = &flags,
@@ -1205,21 +1197,21 @@ pub fn build(b: *std.Build) void {
 
     if (power) {
         if (windows) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/power/windows"),
                 .files = &.{"SDL_syspower.c"},
                 .flags = &flags,
             });
         }
         if (linux) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/power/linux"),
                 .files = &.{"SDL_syspower.c"},
                 .flags = &flags,
             });
         }
         if (apple) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/power/macos"),
                 .files = &.{"SDL_syspower.c"},
                 .flags = &flags,
@@ -1229,7 +1221,7 @@ pub fn build(b: *std.Build) void {
 
     if (render) {
         if (render_d3d) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/direct3d"),
                 .files = &.{
                     "SDL_render_d3d.c",
@@ -1239,7 +1231,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (render_d3d11) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/direct3d11"),
                 .files = &.{
                     "SDL_render_d3d11.c",
@@ -1249,7 +1241,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (render_d3d12) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/direct3d12"),
                 .files = &.{
                     "SDL_render_d3d12.c",
@@ -1259,7 +1251,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (render_vulkan) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/vulkan"),
                 .files = &.{
                     "SDL_render_vulkan.c",
@@ -1269,7 +1261,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (render_gpu) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/gpu"),
                 .files = &.{
                     "SDL_pipeline_gpu.c",
@@ -1280,14 +1272,14 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (render_metal) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/metal"),
                 .files = &.{"SDL_render_metal.m"},
                 .flags = &flags,
             });
         }
         if (opengl) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/opengl"),
                 .files = &.{
                     "SDL_render_gl.c",
@@ -1297,7 +1289,7 @@ pub fn build(b: *std.Build) void {
             });
         }
         if (opengles) {
-            lib.addCSourceFiles(.{
+            mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/render/opengles2"),
                 .files = &.{
                     "SDL_render_gles2.c",
@@ -1308,6 +1300,15 @@ pub fn build(b: *std.Build) void {
         }
     }
 
+    const lib = b.addLibrary(.{
+        .name = "sdl3",
+        .root_module = mod,
+        .linkage = linkage,
+    });
+    if (linkage == .dynamic) {
+        lib.setVersionScript(sdl_dep.path("src/dynapi/SDL_dynapi.sym"));
+        lib.linker_allow_undefined_version = true;
+    }
     lib.installHeadersDirectory(sdl_dep.path("include/SDL3"), "SDL3", .{});
     b.installArtifact(lib);
 }
