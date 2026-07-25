@@ -34,29 +34,31 @@ pub fn build(b: *std.Build) void {
     const android = target.result.abi.isAndroid();
     const musl = target.result.abi.isMusl();
 
+    const legalize_step = b.step("legalize", "check compile time options for misconfigurations");
+
     const linkage = b.option(std.builtin.LinkMode, "linkage", "Linkage type for the library") orelse .static;
     const audio = b.option(bool, "SDL_AUDIO", "Enable SDL audio support") orelse true;
     const video = b.option(bool, "SDL_VIDEO", "Enable SDL video support") orelse true;
     const gpu = b.option(bool, "SDL_GPU", "Enable SDL GPU support") orelse video;
     if (gpu and !video) {
         const fail = b.addFail("SDL_GPU requires SDL_VIDEO to be enabled");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const render = b.option(bool, "SDL_RENDER", "Enable SDL renderer support") orelse video;
     if (render and !video) {
         const fail = b.addFail("SDL_RENDER requires SDL_VIDEO to be enabled");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const camera = b.option(bool, "SDL_CAMERA", "Enable SDL camera support") orelse video;
     if (camera and !video) {
         const fail = b.addFail("SDL_CAMERA requires SDL_VIDEO to be enabled");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const joystick = b.option(bool, "SDL_JOYSTICK", "Enable SDL joystick support") orelse true;
     const haptic = b.option(bool, "SDL_HAPTIC", "Enable SDL haptic support") orelse joystick;
     if (haptic and !joystick) {
         const fail = b.addFail("SDL_HAPTIC requires SDL_JOYSTICK to be enabled");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const hidapi = b.option(bool, "SDL_HIDAPI", "Enable SDL HIDAPI support") orelse !visionos;
     const power = b.option(bool, "SDL_POWER", "Enable SDL power support") orelse true;
@@ -68,67 +70,67 @@ pub fn build(b: *std.Build) void {
     const avx = b.option(bool, "SDL_AVX", "Use AVX assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (avx and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_AVX requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const avx2 = b.option(bool, "SDL_AVX2", "Use AVX2 assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (avx2 and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_AVX2 requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const avx512f = b.option(bool, "SDL_AVX512F", "Use AVX-512 assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (avx512f and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_AVX512F requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const sse = b.option(bool, "SDL_SSE", "Use SSE assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (sse and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_SSE requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const sse2 = b.option(bool, "SDL_SSE2", "Use SSE2 assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (sse2 and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_SSE2 requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const sse3 = b.option(bool, "SDL_SSE3", "Use SSE3 assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (sse3 and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_SSE3 requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const sse4_1 = b.option(bool, "SDL_SSE4_1", "Use SSE4.1 assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (sse4_1 and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_SSE4_1 requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const sse4_2 = b.option(bool, "SDL_SSE4_2", "Use SSE4.2 assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (sse4_2 and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_SSE4_2 requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const mmx = b.option(bool, "SDL_MMX", "Use MMX assembly routines") orelse assembly and (cpu_x86 or cpu_x64);
     if (mmx and !(assembly and (cpu_x86 or cpu_x64))) {
         const fail = b.addFail("SDL_MMX requires SDL_ASSEMBLY to be enabled and target CPU to be x86 or x86_64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const altivec = b.option(bool, "SDL_ALTIVEC", "Use Altivec assembly routines") orelse assembly and (cpu_powerpc32 or cpu_powerpc64);
     if (altivec and !(assembly and (cpu_powerpc32 or cpu_powerpc64))) {
         const fail = b.addFail("SDL_ALTIVEC requires SDL_ASSEMBLY to be enabled and target CPU to be PowerPC or PowerPC64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const neon = b.option(bool, "SDL_NEON", "Use NEON assembly routines") orelse assembly and (cpu_arm32 or cpu_arm64);
     if (neon and !(assembly and (cpu_arm32 or cpu_arm64))) {
         const fail = b.addFail("SDL_NEON requires SDL_ASSEMBLY to be enabled and target CPU to be ARM or ARM64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const lsx = b.option(bool, "SDL_LSX", "Use LSX assembly routines") orelse assembly and cpu_loongarch64;
     if (lsx and !assembly and cpu_loongarch64) {
         const fail = b.addFail("SDL_LSX requires SDL_ASSEMBLY to be enabled and target CPU to be LoongArch64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const lasx = b.option(bool, "SDL_LASX", "Use LASX assembly routines") orelse assembly and cpu_loongarch64;
     if (lasx and !assembly and cpu_loongarch64) {
         const fail = b.addFail("SDL_LASX requires SDL_ASSEMBLY to be enabled and target CPU to be LoongArch64");
-        b.getInstallStep().dependOn(&fail.step);
+        legalize_step.dependOn(&fail.step);
     }
     const libc = b.option(bool, "SDL_LIBC", "Use the system C library") orelse true;
     // const system_iconv = b.option(bool, "SDL_SYSTEM_ICONV", "Use iconv() from system-installed libraries") orelse !windows and !apple and !ios and !tvos and !visionos and !watchos;
@@ -1305,6 +1307,7 @@ pub fn build(b: *std.Build) void {
         .root_module = mod,
         .linkage = linkage,
     });
+    lib.step.dependOn(legalize_step);
     if (linkage == .dynamic) {
         lib.setVersionScript(sdl_dep.path("src/dynapi/SDL_dynapi.sym"));
         lib.linker_allow_undefined_version = true;
