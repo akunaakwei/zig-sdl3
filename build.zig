@@ -138,8 +138,7 @@ pub fn build(b: *std.Build) void {
     // const system_iconv = b.option(bool, "SDL_SYSTEM_ICONV", "Use iconv() from system-installed libraries") orelse !windows and !apple and !ios and !tvos and !visionos and !watchos;
     const libiconv = b.option(bool, "SDL_LIBICONV", "Prefer iconv() from libiconv, if available, over libc version") orelse false;
     const gcc_atomics = b.option(bool, "SDL_GCC_ATOMICS", "Use gcc builtin atomics") orelse true;
-    // const dbus = b.option(bool, "SDL_DBUS", "Enable D-Bus support") orelse linux;
-    const dbus = false;
+    const dbus = b.option(bool, "SDL_DBUS", "Enable D-Bus support") orelse linux;
     // const liburing = b.option(bool, "SDL_LIBURING", "Enable liburing support") orelse linux;
     const liburing = false;
     const diskaudio = b.option(bool, "SDL_DISKAUDIO", "Support the disk writer audio driver") orelse audio;
@@ -707,7 +706,7 @@ pub fn build(b: *std.Build) void {
         mod.linkLibrary(uclibc);
     }
     if (dbus) {
-        if (b.lazyDependency("dbus", .{ .target = target, .optimize = optimize })) |dep| {
+        if (b.lazyDependency("dbus", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
             const lib = dep.artifact("dbus-1");
             mod.linkLibrary(lib);
         }

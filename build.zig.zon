@@ -12,6 +12,11 @@
             .url = "https://github.com/akunaakwei/zig-autoconfigheader/archive/8fe4f925cd29f87dc9cafe27382358d0839c9920.tar.gz",
             .hash = "autoconfigheader-0.0.1-M7E_ZdAvAACUUzXpcsUySSgP_-ACO70YfZhNU7POHk1l",
         },
+        .dbus = .{
+            .url = "https://github.com/akunaakwei/zig-dbus/archive/effe44894a7c24a8eb844242ee0d1a5fc7e170a5.tar.gz",
+            .hash = "dbus-1.16.2-CcRkAh8_AADu_dbYnyzPT4y6FkPgi2jjBADRY8_x0CGv",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
