@@ -8,6 +8,10 @@
             .url = "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.26.tar.gz",
             .hash = "N-V-__8AAH6GjAPdfAbJaCvgcvc3AcVlINdg2ufslfY_c-xJ",
         },
+        .autoconfigheader = .{
+            .url = "https://github.com/akunaakwei/zig-autoconfigheader/archive/8fe4f925cd29f87dc9cafe27382358d0839c9920.tar.gz",
+            .hash = "autoconfigheader-0.0.1-M7E_ZdAvAACUUzXpcsUySSgP_-ACO70YfZhNU7POHk1l",
+        },
     },
     .paths = .{
         "build.zig",

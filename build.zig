@@ -1,4 +1,5 @@
 const std = @import("std");
+const AutoConfigHeaderStep = @import("autoconfigheader").AutoConfigHeaderStep;
 
 const Assertions = enum {
     auto,
@@ -28,11 +29,12 @@ pub fn build(b: *std.Build) void {
     const visionos = target.result.os.tag == .visionos;
     const watchos = target.result.os.tag == .watchos;
     const apple = macos or ios or tvos or visionos or watchos;
-    const freebsd = target.result.os.tag == .freebsd or target.result.os.tag == .openbsd or target.result.os.tag == .netbsd;
+    const bsdlike = target.result.os.tag == .freebsd or target.result.os.tag == .openbsd or target.result.os.tag == .netbsd;
     const emscripten = target.result.os.tag == .emscripten;
+    const vita = target.result.os.tag == .vita;
 
     const android = target.result.abi.isAndroid();
-    const musl = target.result.abi.isMusl();
+    // const musl = target.result.abi.isMusl();
 
     const legalize_step = b.step("legalize", "check compile time options for misconfigurations");
 
@@ -135,31 +137,39 @@ pub fn build(b: *std.Build) void {
     const libc = b.option(bool, "SDL_LIBC", "Use the system C library") orelse true;
     // const system_iconv = b.option(bool, "SDL_SYSTEM_ICONV", "Use iconv() from system-installed libraries") orelse !windows and !apple and !ios and !tvos and !visionos and !watchos;
     const libiconv = b.option(bool, "SDL_LIBICONV", "Prefer iconv() from libiconv, if available, over libc version") orelse false;
-    // const gcc_atomics = b.option(bool, "SDL_GCC_ATOMICS", "Use gcc builtin atomics");
-    // const dbus = b.option(bool, "SDL_DBUS", "Enable D-Bus support") orelse unix;
-    // const liburing = b.option(bool, "SDL_LIBURING", "Enable liburing support") orelse unix;
+    const gcc_atomics = b.option(bool, "SDL_GCC_ATOMICS", "Use gcc builtin atomics") orelse true;
+    // const dbus = b.option(bool, "SDL_DBUS", "Enable D-Bus support") orelse linux;
+    const dbus = false;
+    // const liburing = b.option(bool, "SDL_LIBURING", "Enable liburing support") orelse linux;
+    const liburing = false;
     const diskaudio = b.option(bool, "SDL_DISKAUDIO", "Support the disk writer audio driver") orelse audio;
     const dummyaudio = b.option(bool, "SDL_DUMMYAUDIO", "Support the dummy audio driver") orelse audio;
     const dummyvideo = b.option(bool, "SDL_DUMMYVIDEO", "Use dummy video driver") orelse video;
-    // const ibus = b.option(bool, "SDL_IBUS", "Enable IBus support") orelse unix;
+    // const ibus = b.option(bool, "SDL_IBUS", "Enable IBus support") orelse linux;
+    const ibus = false;
     const opengl = b.option(bool, "SDL_OPENGL", "Include OpenGL support") orelse video and !apple;
     const opengles = b.option(bool, "SDL_OPENGLES", "Include OpenGL ES support") orelse video and !apple and !apple;
     const pthreads = b.option(bool, "SDL_PTHREADS", "Use POSIX threads for multi-threading") orelse linux or apple;
     // const pthreads_sem = b.option(bool, "SDL_PTHREADS_SEM", "Use pthread semaphores") orelse pthreads;
     const oss = b.option(bool, "SDL_OSS", "Support the OSS audio API") orelse audio and false;
-    const alsa = b.option(bool, "SDL_ALSA", "Support the ALSA audio API") orelse audio and linux;
+    // const alsa = b.option(bool, "SDL_ALSA", "Support the ALSA audio API") orelse audio and linux;
+    const alsa = false;
     // const alsa_shared = b.option(bool, "SDL_ALSA_SHARED", "Dynamically load ALSA audio support") orelse alsa and false;
     const jack = b.option(bool, "SDL_JACK", "Support the JACK audio API") orelse false;
     // const jack_shared = b.option(bool, "SDL_JACK_SHARED", "Dynamically load JACK audio support") orelse jack and false;
-    const pipewire = b.option(bool, "SDL_PIPEWIRE", "Use Pipewire audio") orelse audio and false;
+    // const pipewire = b.option(bool, "SDL_PIPEWIRE", "Use Pipewire audio") orelse audio and false;
+    const pipewire = false;
     // const pipewire_shared = b.option(bool, "SDL_PIPEWIRE_SHARED", "Dynamically load Pipewire support") orelse pipewire and false;
-    const pulseaudio = b.option(bool, "SDL_PULSEAUDIO", "Use PulseAudio") orelse audio and linux;
+    // const pulseaudio = b.option(bool, "SDL_PULSEAUDIO", "Use PulseAudio") orelse audio and linux;
+    const pulseaudio = false;
     // const pulseaudio_shared = b.option(bool, "SDL_PULSEAUDIO_SHARED", "Dynamically load PulseAudio support") orelse pulseaudio and false;
-    const sndio = b.option(bool, "SDL_SNDIO", "Support the sndio audio API") orelse audio and linux;
+    // const sndio = b.option(bool, "SDL_SNDIO", "Support the sndio audio API") orelse audio and linux;
+    const sndio = false;
     // const sndio_shared = b.option(bool, "SDL_SNDIO_SHARED", "Dynamically load the sndio audio API") orelse sndio and false;
     // const rpath = b.option(bool, "SDL_RPATH", "Use an rpath when linking SDL");
     // const clock_gettime = b.option(bool, "SDL_CLOCK_GETTIME", "Use clock_gettime() instead of gettimeofday()") orelse unix or android;
-    const x11 = b.option(bool, "SDL_X11", "Use X11 video driver") orelse linux and video;
+    // const x11 = b.option(bool, "SDL_X11", "Use X11 video driver") orelse linux and video;
+    const x11 = false;
     // const x11_shared = b.option(bool, "SDL_X11_SHARED", "Dynamically load X11 support") orelse x11 and false;
     const x11_xcursor = b.option(bool, "SDL_X11_XCURSOR", "Enable Xcursor support") orelse x11;
     const x11_xdbe = b.option(bool, "SDL_X11_XDBE", "Enable Xdbe support") orelse x11;
@@ -169,9 +179,10 @@ pub fn build(b: *std.Build) void {
     const x11_xscrnsaver = b.option(bool, "SDL_X11_XSCRNSAVER", "Enable Xscrnsaver support") orelse x11;
     const x11_xshape = b.option(bool, "SDL_X11_XSHAPE", "Enable XShape support") orelse x11;
     const x11_xsync = b.option(bool, "SDL_X11_XSYNC", "Enable Xsync support") orelse x11;
-    const wayland = b.option(bool, "SDL_WAYLAND", "Use Wayland video driver") orelse linux and video and !x11;
+    // const wayland = b.option(bool, "SDL_WAYLAND", "Use Wayland video driver") orelse linux and video and !x11;
+    const wayland = false;
     // const wayland_shared = b.option(bool, "SDL_WAYLAND_SHARED", "Dynamically load Wayland support") orelse wayland and false;
-    // const wayland_libdecor = b.option(bool, "SDL_WAYLAND_LIBDECOR", "Use client-side window decorations on Wayland") orelse wayland;
+    const wayland_libdecor = b.option(bool, "SDL_WAYLAND_LIBDECOR", "Use client-side window decorations on Wayland") orelse wayland;
     // const wayland_libdecor_shared = b.option(bool, "SDL_WAYLAND_LIBDECOR_SHARED", "Dynamically load libdecor support") orelse wayland_libdecor and false;
     // const rpi = b.option(bool, "SDL_RPI", "Use Raspberry Pi video driver") orelse false;
     // const rockchip = b.option(bool, "SDL_ROCKCHIP", "Use ROCKCHIP Hardware Acceleration video driver") orelse false;
@@ -185,7 +196,7 @@ pub fn build(b: *std.Build) void {
     const render_metal = b.option(bool, "SDL_RENDER_METAL", "Enable the Metal render driver") orelse render and apple;
     const render_gpu = b.option(bool, "SDL_RENDER_GPU", "Enable the SDL_GPU render driver") orelse render and gpu;
     // const vivante = b.option(bool, "SDL_VIVANTE", "Use Vivante EGL video driver") orelse video and unix and cpu_arm32;
-    const vulkan = b.option(bool, "SDL_VULKAN", "Enable Vulkan support") orelse video and (android or linux or freebsd or windows);
+    const vulkan = b.option(bool, "SDL_VULKAN", "Enable Vulkan support") orelse video and (android or linux or bsdlike or windows);
     const render_vulkan = b.option(bool, "SDL_RENDER_VULKAN", "Enable the Vulkan render driver") orelse render and vulkan;
     const metal = b.option(bool, "SDL_METAL", "Enable Metal support") orelse video and apple;
     // const openvr = b.option(bool, "SDL_OPENVR", "Use OpenVR video driver") orelse false;
@@ -195,12 +206,13 @@ pub fn build(b: *std.Build) void {
     const dummycamera = b.option(bool, "SDL_DUMMYCAMERA", "Support the dummy camera driver") orelse camera;
     // const backgrounding_signal = b.option(bool, "SDL_BACKGROUNDING_SIGNAL", "number to use for magic backgrounding signal or 'OFF'") orelse false;
     // const foregrounding_signal = b.option(bool, "SDL_FOREGROUNDING_SIGNAL", "number to use for magic foregrounding signal or 'OFF'") orelse false;
-    // const hidapi = b.option(bool, "SDL_HIDAPI", "Enable the HIDAPI subsystem");
-    const hidapi_libusb = b.option(bool, "SDL_HIDAPI_LIBUSB", "Use libusb for low level joystick drivers") orelse hidapi and linux;
+    // const hidapi_libusb = b.option(bool, "SDL_HIDAPI_LIBUSB", "Use libusb for low level joystick drivers") orelse hidapi and linux;
+    const hidapi_libusb = false;
     // const hidapi_libusb_shared = b.option(bool, "SDL_HIDAPI_LIBUSB_SHARED", "Dynamically load libusb support") orelse hidapi_libusb and false;
     const hidapi_joystick = b.option(bool, "SDL_HIDAPI_JOYSTICK", "Use HIDAPI for low level joystick drivers") orelse hidapi and joystick;
     const virtual_joystick = b.option(bool, "SDL_VIRTUAL_JOYSTICK", "Enable the virtual-joystick driver") orelse hidapi;
-    const libudev = b.option(bool, "SDL_LIBUDEV", "Enable libudev support") orelse linux;
+    // const libudev = b.option(bool, "SDL_LIBUDEV", "Enable libudev support") orelse linux;
+    const libudev = false;
     // const asan = b.option(bool, "SDL_ASAN", "Use AddressSanitizer to detect memory errors");
     // const ccache = b.option(bool, "SDL_CCACHE", "Use Ccache to speed up build");
     // const clang_tidy = b.option(bool, "SDL_CLANG_TIDY", "Run clang-tidy static analysis");
@@ -216,437 +228,457 @@ pub fn build(b: *std.Build) void {
 
     const sdl_dep = b.dependency("sdl", .{});
 
-    const config_header_h = b.addConfigHeader(
-        .{
-            .style = .{ .cmake = sdl_dep.path("include/build_config/SDL_build_config.h.cmake") },
-            .include_path = "SDL_build_config.h",
+    const config_header_h_step = AutoConfigHeaderStep.create(b, target, .{
+        .style = .{ .cmake = sdl_dep.path("include/build_config/SDL_build_config.h.cmake") },
+        .include_path = "SDL_build_config.h",
+    });
+    if (gcc_atomics) {
+        config_header_h_step.addHaveFunction("HAVE_GCC_ATOMICS", "__sync_lock_test_and_set((int *)0, 0);(void)__sync_fetch_and_add((int *)0, 0);(void)__sync_bool_compare_and_swap((int *)0, 0, 0)", &.{});
+        config_header_h_step.addHaveFunction("HAVE_GCC_SYNC_LOCK_TEST_AND_SET", "__sync_lock_test_and_set((int *)0, 0);(void)__sync_lock_release((int *)0)", &.{});
+    }
+    config_header_h_step.addHaveHeader("HAVE_ALLOCA_H", "alloca.h");
+    config_header_h_step.addHaveHeader("HAVE_MALLOC_H", "malloc.h");
+    config_header_h_step.addHaveFunction("_ALLOCA_IN_MALLOC_H", "&_alloca", &.{"malloc.h"});
+    config_header_h_step.addHaveHeader("HAVE_FLOAT_H", "float.h");
+    config_header_h_step.addHaveHeader("HAVE_STDARG_H", "stdarg.h");
+    config_header_h_step.addHaveHeader("HAVE_STDDEF_H", "stddef.h");
+    config_header_h_step.addHaveHeader("HAVE_STDINT_H", "stdint.h");
+    if (libc) {
+        config_header_h_step.config_header.addValues(.{ .HAVE_LIBC = true });
+    }
+    config_header_h_step.addHaveHeader("HAVE_ICONV_H", "iconv.h");
+    config_header_h_step.addHaveHeader("HAVE_INTTYPES_H", "inttypes.h");
+    config_header_h_step.addHaveHeader("HAVE_LIMITS_H", "limits.h");
+    config_header_h_step.addHaveHeader("HAVE_MATH_H", "math.h");
+    config_header_h_step.addHaveHeader("HAVE_MEMORY_H", "memory.h");
+    config_header_h_step.addHaveHeader("HAVE_SIGNAL_H", "signal.h");
+    config_header_h_step.addHaveHeader("HAVE_STDIO_H", "stdio.h");
+    config_header_h_step.addHaveHeader("HAVE_STDLIB_H", "stdlib.h");
+    config_header_h_step.addHaveHeader("HAVE_STRINGS_H", "strings.h");
+    config_header_h_step.addHaveHeader("HAVE_STRING_H", "string.h");
+    config_header_h_step.addHaveHeader("HAVE_SYS_TYPES_H", "sys/types.h");
+    config_header_h_step.addHaveHeader("HAVE_WCHAR_H", "wchar.h");
+    config_header_h_step.addHaveHeader("HAVE_PTHREAD_H", "pthread.h");
+    config_header_h_step.addHaveHeader("HAVE_PTHREAD_NP_H", "pthread_np.h");
+    config_header_h_step.addHaveHeader("HAVE_DDRAW_H", "ddraw.h");
+    config_header_h_step.addHaveHeader("HAVE_DSOUND_H", "dsound.h");
+    config_header_h_step.addHaveHeader("HAVE_DINPUT_H", "dinput.h");
+    config_header_h_step.addHaveHeader("HAVE_XINPUT_H", "xinput.h");
+    config_header_h_step.addHaveHeader("HAVE_WINDOWS_GAMING_INPUT_H", "windows.gaming.input.h");
+    config_header_h_step.addHaveHeader("HAVE_GAMEINPUT_H", "gameinput.h");
+    config_header_h_step.addHaveHeader("HAVE_DXGI_H", "dxgi.h");
+    config_header_h_step.addHaveHeader("HAVE_DXGI1_6_H", "dxgi1_6.h");
+    config_header_h_step.addHaveHeader("HAVE_MMDEVICEAPI_H", "mmdeviceapi.h");
+    config_header_h_step.addHaveHeader("HAVE_TPCSHRD_H", "tpcshrd.h");
+    config_header_h_step.addHaveHeader("HAVE_ROAPI_H", "roapi.h");
+    config_header_h_step.addHaveHeader("HAVE_SHELLSCALINGAPI_H", "shellscalingapi.h");
+    config_header_h_step.addHaveHeader("HAVE_SYS_INOTIFY_H", "sys/inotify.h");
+    config_header_h_step.addHaveFunction("HAVE_PTHREAD_SET_NAME_NP", "&pthread_set_name_np", &.{"pthread.h"});
+    config_header_h_step.addHaveFunction("HAVE_PTHREAD_SETNAME_NP", "&pthread_setname_np", &.{"pthread.h"});
+    config_header_h_step.addHaveFunction("HAVE_DLOPEN_IN_LIBC", "&dlopen", &.{"dlfcn.h"});
+    config_header_h_step.addHaveFunction2("HAVE_DLOPEN_IN_LIBDL", "&dlopen", &.{"dlfcn.h"}, &.{"dl"});
+    config_header_h_step.addHaveFunction("HAVE_DLOPEN", "&dlopen", &.{"dlfcn.h"});
+    config_header_h_step.addHaveFunction("HAVE_MALLOC", "&malloc", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_FDATASYNC", "&fdatasync", &.{"unistd.h"});
+    config_header_h_step.addHaveFunction("HAVE_GETENV", "&getenv", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_SETENV", "&setenv", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_PUTENV", "&putenv", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_UNSETENV", "&unsetenv", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_GETHOSTNAME", "&gethostname", &.{"unistd.h"});
+    config_header_h_step.addHaveFunction("HAVE_ABS", "&abs", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_BCOPY", "&bcopy", &.{"strings.h"});
+    config_header_h_step.addHaveFunction("HAVE_MEMSET", "&memset", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_MEMCPY", "&memcpy", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_MEMMOVE", "&memmove", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_MEMCMP", "&memcmp", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSLEN", "&wcslen", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSNLEN", "&wcsnlen", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSLCPY", "&wcslcpy", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSLCAT", "&wcslcat", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSSTR", "&wcsstr", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSCMP", "&wcscmp", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSNCMP", "&wcsncmp", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSTOL", "&wcstol", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRLEN", "&strlen", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRNLEN", "&strnlen", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRLCPY", "&strlcpy", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRLCAT", "&strlcat", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRPBRK", "&strpbrk", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE__STRREV", "&_strrev", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_INDEX", "&index", &.{"strings.h"});
+    config_header_h_step.addHaveFunction("HAVE_RINDEX", "&rindex", &.{"strings.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRCHR", "&strchr", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRRCHR", "&strrchr", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRSTR", "&strstr", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRNSTR", "&strnstr", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRTOK_R", "&strtok_r", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_ITOA", "&itoa", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE__LTOA", "&_ltoa", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE__UITOA", "&_uitoa", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE__ULTOA", "&_ultoa", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRTOL", "&strtol", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRTOUL", "&strtoul", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE__I64TOA", "&_i64toa", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE__UI64TOA", "&_ui64toa", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRTOLL", "&strtoll", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRTOULL", "&strtoull", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRTOD", "&strtod", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_ATOI", "&atoi", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_ATOF", "&atof", &.{"stdlib.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRCMP", "&strcmp", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_STRNCMP", "&strncmp", &.{"string.h"});
+    config_header_h_step.addHaveFunction("HAVE_VSSCANF", "&vsscanf", &.{ "stdio.h", "stdarg.h" });
+    config_header_h_step.addHaveFunction("HAVE_VSNPRINTF", "&vsnprintf", &.{ "stdio.h", "stdarg.h" });
+    config_header_h_step.addHaveFunction("HAVE_ACOS", "&acos", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ACOSF", "&acosf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ASIN", "&asin", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ASINF", "&asinf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ATAN", "&atan", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ATANF", "&atanf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ATAN2", "&atan2", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ATAN2F", "&atan2f", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_CEIL", "&ceil", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_CEILF", "&ceilf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_COPYSIGN", "&copysign", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_COPYSIGNF", "&copysignf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE__COPYSIGN", "&_copysign", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_COS", "&cos", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_COSF", "&cosf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_EXP", "&exp", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_EXPF", "&expf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_FABS", "&fabs", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_FABSF", "&fabsf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_FLOOR", "&floor", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_FLOORF", "&floorf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_FMOD", "&fmod", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_FMODF", "&fmodf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISINF", "isinf(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISINFF", "isinff(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISINF_FLOAT_MACRO", "isinf(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISNAN", "isnan(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISNANF", "isnanf(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISNAN_FLOAT_MACRO", "isnan(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_LOG", "&log", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_LOGF", "&logf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_LOG10", "&log10", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_LOG10F", "&log10f", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_LROUND", "&lround", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_LROUNDF", "&lroundf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_MODF", "&modf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_MODFF", "&modff", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_POW", "&pow", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_POWF", "&powf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ROUND", "&round", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ROUNDF", "&roundf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_SCALBN", "&scalbn", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_SCALBNF", "&scalbnf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_SIN", "&sin", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_SINF", "&sinf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_SQRT", "&sqrt", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_SQRTF", "&sqrtf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_TAN", "&tan", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_TANF", "&tanf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_TRUNC", "&trunc", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_TRUNCF", "&truncf", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE__FSEEKI64", "&_fseeki64", &.{"stdio.h"});
+    config_header_h_step.addHaveFunction("HAVE_FOPEN64", "&fopen64", &.{"stdio.h"});
+    config_header_h_step.addHaveFunction("HAVE_FSEEKO", "&fseeko", &.{"stdio.h"});
+    config_header_h_step.addHaveFunction("HAVE_FSEEKO64", "&fseeko64", &.{"stdio.h"});
+    config_header_h_step.addHaveFunction("HAVE_MEMFD_CREATE", "&memfd_create", &.{"sys/mman.h"});
+    config_header_h_step.addHaveFunction("HAVE_POSIX_FALLOCATE", "&posix_fallocate", &.{});
+    config_header_h_step.addHaveFunction("HAVE_SIGACTION", "&sigaction", &.{"fcntl.h"});
+    config_header_h_step.addHaveFunction("HAVE_SA_SIGACTION", "&sa_sigaction", &.{"signal.h"});
+    config_header_h_step.addHaveFunction("HAVE_ST_MTIM", "&st_mtim", &.{"sys/stat.h"});
+    config_header_h_step.addHaveFunction("HAVE_SETJMP", "&setjmp", &.{"setjmp.h"});
+    config_header_h_step.addHaveFunction("HAVE_NANOSLEEP", "&nanosleep", &.{"time.h"});
+    config_header_h_step.addHaveFunction("HAVE_GMTIME_R", "&gmtime_r", &.{"time.h"});
+    config_header_h_step.addHaveFunction("HAVE_LOCALTIME_R", "&localtime_r", &.{"time.h"});
+    config_header_h_step.addHaveFunction("HAVE_NL_LANGINFO", "&nl_langinfo", &.{"langinfo.h"});
+    config_header_h_step.addHaveFunction("HAVE_SYSCONF", "&sysconf", &.{"unistd.h"});
+    config_header_h_step.addHaveFunction("HAVE_SYSCTLBYNAME", "&sysctlbyname", &.{"sys/sysctl.h"});
+    config_header_h_step.addHaveFunction("HAVE_CLOCK_GETTIME", "&clock_gettime", &.{"time.h"});
+    config_header_h_step.addHaveFunction("HAVE_GETPAGESIZE", "&getpagesize", &.{"unistd.h"});
+    config_header_h_step.addHaveFunction("HAVE_POLL", "&poll", &.{"socket.h"});
+    config_header_h_step.addHaveFunction("HAVE_INOTIFY_INIT", "&inotify_init", &.{"sys/inotify.h"});
+    config_header_h_step.addHaveFunction("HAVE_INOTIFY_INIT1", "&inotify_init1", &.{"sys/inotify.h"});
+    config_header_h_step.addHaveFunction("HAVE_LINUX_INPUT_H", "EVIOCGNAME(0)", &.{"linux/input.h"});
+    if (dbus) {
+        config_header_h_step.config_header.addValues(.{
+            .HAVE_DBUS_DBUS_H = true,
+            .HAVE_FCITX = true,
+        });
+    }
+    if (ibus) {
+        config_header_h_step.config_header.addValues(.{
+            .HAVE_IBUS_IBUS_H = true,
+            .HAVE_IBUS = true,
+        });
+    }
+    if (ibus or dbus) {
+        config_header_h_step.config_header.addValues(.{
+            .SDL_USE_IME = true,
+        });
+    }
+
+    config_header_h_step.config_header.addValues(.{
+        .HAVE_ICONV = linux or emscripten,
+        .SDL_USE_LIBICONV = libiconv,
+        .HAVE_SEM_TIMEDWAIT = linux,
+        .HAVE_GETAUXVAL = linux,
+        .HAVE_ELF_AUX_INFO = false,
+        .HAVE__EXIT = windows or linux or apple or emscripten,
+        .HAVE_LIBUSB = hidapi_libusb,
+        .HAVE_O_CLOEXEC = linux or macos or emscripten,
+        .HAVE_LIBUDEV_H = libudev,
+        .HAVE_LIBDECOR_H = wayland_libdecor,
+        .HAVE_LIBURING_H = liburing,
+        .USE_POSIX_SPAWN = false,
+        .SDL_DEFAULT_ASSERT_LEVEL_CONFIGURED = assertions != .auto,
+        .SDL_DEFAULT_ASSERT_LEVEL = switch (assertions) {
+            .disabled => "0",
+            .release => "1",
+            .enabled => "2",
+            .paranoid => "3",
+            .auto => "",
         },
-        .{
-            .HAVE_GCC_ATOMICS = windows or linux or apple or emscripten,
-            .HAVE_GCC_SYNC_LOCK_TEST_AND_SET = false,
-            .SDL_DISABLE_ALLOCA = false,
-            .HAVE_FLOAT_H = windows or linux or macos or emscripten,
-            .HAVE_STDARG_H = windows or linux or macos or emscripten,
-            .HAVE_STDDEF_H = windows or linux or macos or emscripten,
-            .HAVE_STDINT_H = windows or linux or macos or emscripten,
-            .HAVE_LIBC = windows or linux or macos or emscripten,
-            .HAVE_ALLOCA_H = linux or macos or emscripten,
-            .HAVE_ICONV_H = linux or macos or emscripten,
-            .HAVE_INTTYPES_H = windows or linux or macos or emscripten,
-            .HAVE_LIMITS_H = windows or linux or macos or emscripten,
-            .HAVE_MALLOC_H = windows or linux or emscripten,
-            .HAVE_MATH_H = windows or linux or macos or emscripten,
-            .HAVE_MEMORY_H = windows or linux or macos or emscripten,
-            .HAVE_SIGNAL_H = windows or linux or macos or emscripten,
-            .HAVE_STDIO_H = windows or linux or macos or emscripten,
-            .HAVE_STDLIB_H = windows or linux or macos or emscripten,
-            .HAVE_STRINGS_H = windows or linux or macos or emscripten,
-            .HAVE_STRING_H = windows or linux or macos or emscripten,
-            .HAVE_SYS_TYPES_H = windows or linux or macos or emscripten,
-            .HAVE_WCHAR_H = windows or linux or macos or emscripten,
-            .HAVE_PTHREAD_NP_H = false,
-            .HAVE_DLOPEN = linux or apple or emscripten,
-            .HAVE_MALLOC = windows or linux or apple or emscripten,
-            .HAVE_FDATASYNC = linux or emscripten,
-            .HAVE_GETENV = windows or linux or apple or emscripten,
-            .HAVE_GETHOSTNAME = linux or apple or emscripten,
-            .HAVE_SETENV = linux or apple or emscripten,
-            .HAVE_PUTENV = windows or linux or apple or emscripten,
-            .HAVE_UNSETENV = linux or apple or emscripten,
-            .HAVE_ABS = windows or linux or apple or emscripten,
-            .HAVE_BCOPY = linux or apple or emscripten,
-            .HAVE_MEMSET = windows or linux or apple or emscripten,
-            .HAVE_MEMCPY = windows or linux or apple or emscripten,
-            .HAVE_MEMMOVE = windows or linux or apple or emscripten,
-            .HAVE_MEMCMP = windows or linux or apple or emscripten,
-            .HAVE_WCSLEN = windows or linux or apple or emscripten,
-            .HAVE_WCSNLEN = windows or linux or apple or emscripten,
-            .HAVE_WCSLCPY = apple,
-            .HAVE_WCSLCAT = apple,
-            .HAVE_WCSSTR = windows or linux or apple or emscripten,
-            .HAVE_WCSCMP = windows or linux or apple or emscripten,
-            .HAVE_WCSNCMP = windows or linux or apple or emscripten,
-            .HAVE_WCSTOL = windows or linux or apple or emscripten,
-            .HAVE_STRLEN = windows or linux or apple or emscripten,
-            .HAVE_STRNLEN = windows or linux or apple or emscripten,
-            .HAVE_STRLCPY = linux and musl or apple or emscripten,
-            .HAVE_STRLCAT = linux and musl or apple or emscripten,
-            .HAVE_STRPBRK = windows or linux or apple or emscripten,
-            .HAVE__STRREV = windows,
-            .HAVE_INDEX = linux or apple or emscripten,
-            .HAVE_RINDEX = linux or apple or emscripten,
-            .HAVE_STRCHR = windows or linux or apple or emscripten,
-            .HAVE_STRRCHR = windows or linux or apple or emscripten,
-            .HAVE_STRSTR = windows or linux or apple or emscripten,
-            .HAVE_STRNSTR = apple,
-            .HAVE_STRTOK_R = windows or linux or apple or emscripten,
-            .HAVE_ITOA = windows,
-            .HAVE__LTOA = windows,
-            .HAVE__UITOA = false,
-            .HAVE__ULTOA = windows,
-            .HAVE_STRTOL = windows or linux or apple or emscripten,
-            .HAVE_STRTOUL = windows or linux or apple or emscripten,
-            .HAVE__I64TOA = windows,
-            .HAVE__UI64TOA = windows,
-            .HAVE_STRTOLL = windows or linux or apple or emscripten,
-            .HAVE_STRTOULL = windows or linux or apple or emscripten,
-            .HAVE_STRTOD = windows or linux or apple or emscripten,
-            .HAVE_ATOI = windows or linux or apple or emscripten,
-            .HAVE_ATOF = windows or linux or apple or emscripten,
-            .HAVE_STRCMP = windows or linux or apple or emscripten,
-            .HAVE_STRNCMP = windows or linux or apple or emscripten,
-            .HAVE_VSSCANF = windows or linux or apple or emscripten,
-            .HAVE_VSNPRINTF = windows or linux or apple or emscripten,
-            .HAVE_ACOS = windows or linux or apple or emscripten,
-            .HAVE_ACOSF = windows or linux or apple or emscripten,
-            .HAVE_ASIN = windows or linux or apple or emscripten,
-            .HAVE_ASINF = windows or linux or apple or emscripten,
-            .HAVE_ATAN = windows or linux or apple or emscripten,
-            .HAVE_ATANF = windows or linux or apple or emscripten,
-            .HAVE_ATAN2 = windows or linux or apple or emscripten,
-            .HAVE_ATAN2F = windows or linux or apple or emscripten,
-            .HAVE_CEIL = windows or linux or apple or emscripten,
-            .HAVE_CEILF = windows or linux or apple or emscripten,
-            .HAVE_COPYSIGN = windows or linux or apple or emscripten,
-            .HAVE_COPYSIGNF = windows or linux or apple or emscripten,
-            .HAVE__COPYSIGN = windows,
-            .HAVE_COS = windows or linux or apple or emscripten,
-            .HAVE_COSF = windows or linux or apple or emscripten,
-            .HAVE_EXP = windows or linux or apple or emscripten,
-            .HAVE_EXPF = windows or linux or apple or emscripten,
-            .HAVE_FABS = windows or linux or apple or emscripten,
-            .HAVE_FABSF = windows or linux or apple or emscripten,
-            .HAVE_FLOOR = windows or linux or apple or emscripten,
-            .HAVE_FLOORF = windows or linux or apple or emscripten,
-            .HAVE_FMOD = windows or linux or apple or emscripten,
-            .HAVE_FMODF = windows or linux or apple or emscripten,
-            .HAVE_ISINF = windows or linux or apple or emscripten,
-            .HAVE_ISINFF = linux and !musl or emscripten,
-            .HAVE_ISINF_FLOAT_MACRO = windows or linux or apple or emscripten,
-            .HAVE_ISNAN = windows or linux or apple or emscripten,
-            .HAVE_ISNANF = linux and !musl or emscripten,
-            .HAVE_ISNAN_FLOAT_MACRO = windows or linux or apple or emscripten,
-            .HAVE_LOG = windows or linux or apple or emscripten,
-            .HAVE_LOGF = windows or linux or apple or emscripten,
-            .HAVE_LOG10 = windows or linux or apple or emscripten,
-            .HAVE_LOG10F = windows or linux or apple or emscripten,
-            .HAVE_LROUND = windows or linux or apple or emscripten,
-            .HAVE_LROUNDF = windows or linux or apple or emscripten,
-            .HAVE_MODF = windows or linux or apple or emscripten,
-            .HAVE_MODFF = windows or linux or apple or emscripten,
-            .HAVE_POW = windows or linux or apple or emscripten,
-            .HAVE_POWF = windows or linux or apple or emscripten,
-            .HAVE_ROUND = windows or linux or apple or emscripten,
-            .HAVE_ROUNDF = windows or linux or apple or emscripten,
-            .HAVE_SCALBN = windows or linux or apple or emscripten,
-            .HAVE_SCALBNF = windows or linux or apple or emscripten,
-            .HAVE_SIN = windows or linux or apple or emscripten,
-            .HAVE_SINF = windows or linux or apple or emscripten,
-            .HAVE_SQRT = windows or linux or apple or emscripten,
-            .HAVE_SQRTF = windows or linux or apple or emscripten,
-            .HAVE_TAN = windows or linux or apple or emscripten,
-            .HAVE_TANF = windows or linux or apple or emscripten,
-            .HAVE_TRUNC = windows or linux or apple or emscripten,
-            .HAVE_TRUNCF = windows or linux or apple or emscripten,
-            .HAVE__FSEEKI64 = windows,
-            .HAVE_FOPEN64 = windows or linux and !musl or emscripten,
-            .HAVE_FSEEKO = windows or linux or apple or emscripten,
-            .HAVE_FSEEKO64 = windows or linux and !musl or emscripten,
-            .HAVE_MEMFD_CREATE = linux,
-            .HAVE_POSIX_FALLOCATE = linux or emscripten,
-            .HAVE_SIGACTION = linux or apple or emscripten,
-            .HAVE_SA_SIGACTION = linux or apple or emscripten,
-            .HAVE_ST_MTIM = linux or emscripten,
-            .HAVE_SETJMP = linux or apple or emscripten,
-            .HAVE_NANOSLEEP = linux or apple or emscripten,
-            .HAVE_GMTIME_R = linux or apple or emscripten,
-            .HAVE_LOCALTIME_R = linux or apple or emscripten,
-            .HAVE_NL_LANGINFO = linux or apple or emscripten,
-            .HAVE_SYSCONF = linux or apple or emscripten,
-            .HAVE_SYSCTLBYNAME = apple,
-            .HAVE_CLOCK_GETTIME = linux or emscripten,
-            .HAVE_GETPAGESIZE = linux or apple or emscripten,
-            .HAVE_ICONV = linux or emscripten,
-            .SDL_USE_LIBICONV = libiconv,
-            .HAVE_PTHREAD_SETNAME_NP = linux or apple,
-            .HAVE_PTHREAD_SET_NAME_NP = false,
-            .HAVE_SEM_TIMEDWAIT = linux,
-            .HAVE_GETAUXVAL = linux,
-            .HAVE_ELF_AUX_INFO = false,
-            .HAVE_POLL = linux or apple or emscripten,
-            .HAVE__EXIT = windows or linux or apple or emscripten,
-            .HAVE_DBUS_DBUS_H = linux,
-            .HAVE_FCITX = linux,
-            .HAVE_IBUS_IBUS_H = linux,
-            .HAVE_INOTIFY_INIT1 = linux,
-            .HAVE_INOTIFY = linux,
-            .HAVE_LIBUSB = hidapi_libusb,
-            .HAVE_O_CLOEXEC = linux or macos or emscripten,
-            .HAVE_LINUX_INPUT_H = linux,
-            .HAVE_LIBUDEV_H = libudev,
-            .HAVE_LIBDECOR_H = linux,
-            .HAVE_LIBURING_H = linux,
-            .HAVE_DDRAW_H = windows,
-            .HAVE_DSOUND_H = windows,
-            .HAVE_DINPUT_H = windows,
-            .HAVE_XINPUT_H = windows,
-            .HAVE_WINDOWS_GAMING_INPUT_H = false,
-            .HAVE_GAMEINPUT_H = false,
-            .HAVE_DXGI_H = windows,
-            .HAVE_DXGI1_6_H = windows,
-            .HAVE_MMDEVICEAPI_H = windows,
-            .HAVE_TPCSHRD_H = windows,
-            .HAVE_ROAPI_H = windows,
-            .HAVE_SHELLSCALINGAPI_H = windows,
-            .USE_POSIX_SPAWN = false,
-            .SDL_DEFAULT_ASSERT_LEVEL_CONFIGURED = assertions != .auto,
-            .SDL_DEFAULT_ASSERT_LEVEL = switch (assertions) {
-                .disabled => "0",
-                .release => "1",
-                .enabled => "2",
-                .paranoid => "3",
-                .auto => "",
-            },
-            .SDL_AUDIO_DISABLED = !audio,
-            .SDL_VIDEO_DISABLED = !video,
-            .SDL_GPU_DISABLED = !gpu,
-            .SDL_RENDER_DISABLED = !render,
-            .SDL_CAMERA_DISABLED = !camera,
-            .SDL_JOYSTICK_DISABLED = !joystick,
-            .SDL_HAPTIC_DISABLED = !haptic,
-            .SDL_HIDAPI_DISABLED = !hidapi,
-            .SDL_POWER_DISABLED = !power,
-            .SDL_SENSOR_DISABLED = !sensor,
-            .SDL_DIALOG_DISABLED = !dialog,
-            .SDL_THREADS_DISABLED = emscripten,
-            .SDL_AUDIO_DRIVER_ALSA = audio and alsa,
-            .SDL_AUDIO_DRIVER_ALSA_DYNAMIC = "",
-            .SDL_AUDIO_DRIVER_OPENSLES = audio and android,
-            .SDL_AUDIO_DRIVER_AAUDIO = audio and android,
-            .SDL_AUDIO_DRIVER_COREAUDIO = audio and apple,
-            .SDL_AUDIO_DRIVER_DISK = audio and diskaudio,
-            .SDL_AUDIO_DRIVER_DSOUND = audio and windows,
-            .SDL_AUDIO_DRIVER_DUMMY = audio and dummyaudio,
-            .SDL_AUDIO_DRIVER_EMSCRIPTEN = audio and emscripten,
-            .SDL_AUDIO_DRIVER_HAIKU = false,
-            .SDL_AUDIO_DRIVER_JACK = audio and jack,
-            .SDL_AUDIO_DRIVER_JACK_DYNAMIC = "",
-            .SDL_AUDIO_DRIVER_NETBSD = false,
-            .SDL_AUDIO_DRIVER_OSS = audio and oss,
-            .SDL_AUDIO_DRIVER_PIPEWIRE = audio and pipewire,
-            .SDL_AUDIO_DRIVER_PIPEWIRE_DYNAMIC = "",
-            .SDL_AUDIO_DRIVER_PULSEAUDIO = audio and pulseaudio,
-            .SDL_AUDIO_DRIVER_PULSEAUDIO_DYNAMIC = "",
-            .SDL_AUDIO_DRIVER_SNDIO = audio and sndio,
-            .SDL_AUDIO_DRIVER_SNDIO_DYNAMIC = "",
-            .SDL_AUDIO_DRIVER_WASAPI = audio and wasapi,
-            .SDL_AUDIO_DRIVER_VITA = false,
-            .SDL_AUDIO_DRIVER_PSP = false,
-            .SDL_AUDIO_DRIVER_PS2 = false,
-            .SDL_AUDIO_DRIVER_N3DS = false,
-            .SDL_AUDIO_DRIVER_QNX = false,
-            .SDL_INPUT_LINUXEV = linux,
-            .SDL_INPUT_LINUXKD = linux,
-            .SDL_INPUT_FBSDKBIO = false,
-            .SDL_INPUT_WSCONS = false,
-            .SDL_HAVE_MACHINE_JOYSTICK_H = false,
-            .SDL_JOYSTICK_ANDROID = joystick and false,
-            .SDL_JOYSTICK_DINPUT = joystick and windows,
-            .SDL_JOYSTICK_DUMMY = false,
-            .SDL_JOYSTICK_EMSCRIPTEN = joystick and emscripten,
-            .SDL_JOYSTICK_GAMEINPUT = false,
-            .SDL_JOYSTICK_HAIKU = false,
-            .SDL_JOYSTICK_HIDAPI = joystick and hidapi,
-            .SDL_JOYSTICK_IOKIT = joystick and apple,
-            .SDL_JOYSTICK_LINUX = linux,
-            .SDL_JOYSTICK_MFI = apple,
-            .SDL_JOYSTICK_N3DS = false,
-            .SDL_JOYSTICK_PS2 = false,
-            .SDL_JOYSTICK_PSP = false,
-            .SDL_JOYSTICK_RAWINPUT = joystick and windows,
-            .SDL_JOYSTICK_USBHID = false,
-            .SDL_JOYSTICK_VIRTUAL = joystick and virtual_joystick,
-            .SDL_JOYSTICK_VITA = false,
-            .SDL_JOYSTICK_WGI = false,
-            .SDL_JOYSTICK_XINPUT = joystick and xinput,
-            .SDL_HAPTIC_DUMMY = haptic and emscripten,
-            .SDL_HAPTIC_LINUX = haptic and linux,
-            .SDL_HAPTIC_IOKIT = haptic and apple,
-            .SDL_HAPTIC_DINPUT = haptic and windows,
-            .SDL_HAPTIC_ANDROID = haptic and android,
-            .SDL_LIBUSB_DYNAMIC = "",
-            .SDL_UDEV_DYNAMIC = "",
-            .SDL_PROCESS_DUMMY = emscripten,
-            .SDL_PROCESS_POSIX = linux or apple,
-            .SDL_PROCESS_WINDOWS = windows,
-            .SDL_SENSOR_ANDROID = sensor and android,
-            .SDL_SENSOR_COREMOTION = sensor and apple,
-            .SDL_SENSOR_WINDOWS = sensor and windows,
-            .SDL_SENSOR_DUMMY = !sensor,
-            .SDL_SENSOR_VITA = false,
-            .SDL_SENSOR_N3DS = false,
-            .SDL_LOADSO_DLOPEN = linux or apple or emscripten,
-            .SDL_LOADSO_DUMMY = false,
-            .SDL_LOADSO_WINDOWS = windows,
-            .SDL_THREAD_GENERIC_COND_SUFFIX = windows,
-            .SDL_THREAD_GENERIC_RWLOCK_SUFFIX = windows,
-            .SDL_THREAD_PTHREAD = linux or apple or emscripten,
-            .SDL_THREAD_PTHREAD_RECURSIVE_MUTEX = linux or apple or emscripten,
-            .SDL_THREAD_PTHREAD_RECURSIVE_MUTEX_NP = false,
-            .SDL_THREAD_WINDOWS = windows,
-            .SDL_THREAD_VITA = false,
-            .SDL_THREAD_PSP = false,
-            .SDL_THREAD_PS2 = false,
-            .SDL_THREAD_N3DS = false,
-            .SDL_TIME_UNIX = linux or apple or emscripten,
-            .SDL_TIME_WINDOWS = windows,
-            .SDL_TIME_VITA = false,
-            .SDL_TIME_PSP = false,
-            .SDL_TIME_PS2 = false,
-            .SDL_TIME_N3DS = false,
-            .SDL_TIMER_HAIKU = false,
-            .SDL_TIMER_UNIX = linux or apple or emscripten,
-            .SDL_TIMER_WINDOWS = windows,
-            .SDL_TIMER_VITA = false,
-            .SDL_TIMER_PSP = false,
-            .SDL_TIMER_PS2 = false,
-            .SDL_TIMER_N3DS = false,
-            .SDL_VIDEO_DRIVER_ANDROID = video and android,
-            .SDL_VIDEO_DRIVER_COCOA = video and cocoa,
-            .SDL_VIDEO_DRIVER_DUMMY = video and dummyvideo,
-            .SDL_VIDEO_DRIVER_EMSCRIPTEN = emscripten,
-            .SDL_VIDEO_DRIVER_HAIKU = false,
-            .SDL_VIDEO_DRIVER_KMSDRM = kmsdrm,
-            .SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC = "",
-            .SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC_GBM = "",
-            .SDL_VIDEO_DRIVER_N3DS = false,
-            .SDL_VIDEO_DRIVER_OFFSCREEN = video and offscreen,
-            .SDL_VIDEO_DRIVER_PS2 = false,
-            .SDL_VIDEO_DRIVER_PSP = false,
-            .SDL_VIDEO_DRIVER_RISCOS = false,
-            .SDL_VIDEO_DRIVER_ROCKCHIP = false,
-            .SDL_VIDEO_DRIVER_RPI = false,
-            .SDL_VIDEO_DRIVER_UIKIT = false,
-            .SDL_VIDEO_DRIVER_VITA = false,
-            .SDL_VIDEO_DRIVER_VIVANTE = false,
-            .SDL_VIDEO_DRIVER_VIVANTE_VDK = false,
-            .SDL_VIDEO_DRIVER_OPENVR = false,
-            .SDL_VIDEO_DRIVER_WAYLAND = video and wayland,
-            .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC = "",
-            .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_CURSOR = "",
-            .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_EGL = "",
-            .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_LIBDECOR = "",
-            .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_XKBCOMMON = "",
-            .SDL_VIDEO_DRIVER_WINDOWS = windows,
-            .SDL_VIDEO_DRIVER_X11 = video and x11,
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC = "",
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC_XCURSOR = "",
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC_XEXT = "",
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC_XFIXES = "",
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC_XINPUT2 = "",
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC_XRANDR = "",
-            .SDL_VIDEO_DRIVER_X11_DYNAMIC_XSS = "",
-            .SDL_VIDEO_DRIVER_X11_HAS_XKBLOOKUPKEYSYM = video and x11,
-            .SDL_VIDEO_DRIVER_X11_SUPPORTS_GENERIC_EVENTS = video and x11,
-            .SDL_VIDEO_DRIVER_X11_XCURSOR = video and x11 and x11_xcursor,
-            .SDL_VIDEO_DRIVER_X11_XDBE = video and x11 and x11_xdbe,
-            .SDL_VIDEO_DRIVER_X11_XFIXES = video and x11 and x11_xfixes,
-            .SDL_VIDEO_DRIVER_X11_XINPUT2 = video and x11 and x11_xinput,
-            .SDL_VIDEO_DRIVER_X11_XINPUT2_SUPPORTS_MULTITOUCH = video and x11 and x11_xinput,
-            .SDL_VIDEO_DRIVER_X11_XRANDR = video and x11 and x11_xrandr,
-            .SDL_VIDEO_DRIVER_X11_XSCRNSAVER = video and x11 and x11_xscrnsaver,
-            .SDL_VIDEO_DRIVER_X11_XSHAPE = video and x11 and x11_xshape,
-            .SDL_VIDEO_DRIVER_X11_XSYNC = video and x11 and x11_xsync,
-            .SDL_VIDEO_DRIVER_QNX = false,
-            .SDL_VIDEO_RENDER_D3D = render and render_d3d,
-            .SDL_VIDEO_RENDER_D3D11 = render and render_d3d11,
-            .SDL_VIDEO_RENDER_D3D12 = render and render_d3d12,
-            .SDL_VIDEO_RENDER_GPU = render_gpu,
-            .SDL_VIDEO_RENDER_METAL = render and metal and render_metal,
-            .SDL_VIDEO_RENDER_VULKAN = render and vulkan,
-            .SDL_VIDEO_RENDER_OGL = render and opengl,
-            .SDL_VIDEO_RENDER_OGL_ES2 = render and opengles,
-            .SDL_VIDEO_RENDER_PS2 = false,
-            .SDL_VIDEO_RENDER_PSP = false,
-            .SDL_VIDEO_RENDER_VITA_GXM = false,
-            .SDL_VIDEO_OPENGL = render and opengl,
-            .SDL_VIDEO_OPENGL_ES = render and opengles,
-            .SDL_VIDEO_OPENGL_ES2 = render and opengles and (windows or linux or apple or emscripten),
-            .SDL_VIDEO_OPENGL_CGL = render and opengl and apple,
-            .SDL_VIDEO_OPENGL_GLX = render and opengl and linux,
-            .SDL_VIDEO_OPENGL_WGL = render and opengl and windows,
-            .SDL_VIDEO_OPENGL_EGL = render and opengl and (windows or linux or apple or emscripten),
-            .SDL_VIDEO_VULKAN = video and vulkan,
-            .SDL_VIDEO_METAL = video and metal,
-            .SDL_GPU_D3D11 = gpu and render_d3d11,
-            .SDL_GPU_D3D12 = gpu and render_d3d12,
-            .SDL_GPU_VULKAN = gpu and render_vulkan,
-            .SDL_GPU_METAL = gpu and metal,
-            .SDL_POWER_ANDROID = power and android,
-            .SDL_POWER_LINUX = power and linux,
-            .SDL_POWER_WINDOWS = power and windows,
-            .SDL_POWER_appleX = power and apple,
-            .SDL_POWER_UIKIT = power and false,
-            .SDL_POWER_HAIKU = false,
-            .SDL_POWER_EMSCRIPTEN = power and emscripten,
-            .SDL_POWER_HARDWIRED = false,
-            .SDL_POWER_VITA = false,
-            .SDL_POWER_PSP = false,
-            .SDL_POWER_N3DS = false,
-            .SDL_FILESYSTEM_ANDROID = android,
-            .SDL_FILESYSTEM_HAIKU = false,
-            .SDL_FILESYSTEM_COCOA = apple,
-            .SDL_FILESYSTEM_DUMMY = false,
-            .SDL_FILESYSTEM_RISCOS = false,
-            .SDL_FILESYSTEM_UNIX = linux,
-            .SDL_FILESYSTEM_WINDOWS = windows,
-            .SDL_FILESYSTEM_EMSCRIPTEN = emscripten,
-            .SDL_FILESYSTEM_VITA = false,
-            .SDL_FILESYSTEM_PSP = false,
-            .SDL_FILESYSTEM_PS2 = false,
-            .SDL_FILESYSTEM_N3DS = false,
-            .SDL_STORAGE_STEAM = windows or linux or apple,
-            .SDL_FSOPS_POSIX = linux or apple or emscripten,
-            .SDL_FSOPS_WINDOWS = windows,
-            .SDL_FSOPS_DUMMY = false,
-            .SDL_CAMERA_DRIVER_DUMMY = camera and dummycamera,
-            .SDL_CAMERA_DRIVER_DISK = camera and false,
-            .SDL_CAMERA_DRIVER_V4L2 = camera and linux,
-            .SDL_CAMERA_DRIVER_COREMEDIA = camera and apple,
-            .SDL_CAMERA_DRIVER_ANDROID = camera and android,
-            .SDL_CAMERA_DRIVER_EMSCRIPTEN = camera and emscripten,
-            .SDL_CAMERA_DRIVER_MEDIAFOUNDATION = camera and windows,
-            .SDL_CAMERA_DRIVER_PIPEWIRE = camera and pipewire,
-            .SDL_CAMERA_DRIVER_PIPEWIRE_DYNAMIC = "",
-            .SDL_CAMERA_DRIVER_VITA = false,
-            .SDL_DIALOG_DUMMY = !dialog,
-            .SDL_ALTIVEC_BLITTERS = false,
-            .DYNAPI_NEEDS_DLOPEN = linux or apple or emscripten,
-            .SDL_USE_IME = linux,
-            .SDL_DISABLE_WINDOWS_IME = false,
-            .SDL_GDK_TEXTINPUT = false,
-            .SDL_IPHONE_KEYBOARD = false,
-            .SDL_IPHONE_LAUNCHSCREEN = false,
-            .SDL_VIDEO_VITA_PIB = false,
-            .SDL_VIDEO_VITA_PVR = false,
-            .SDL_VIDEO_VITA_PVR_OGL = false,
-            .SDL_LIBDECOR_VERSION_MAJOR = null,
-            .SDL_LIBDECOR_VERSION_MINOR = null,
-            .SDL_LIBDECOR_VERSION_PATCH = null,
-            .SDL_DISABLE_SSE = !sse,
-            .SDL_DISABLE_SSE2 = !sse2,
-            .SDL_DISABLE_SSE3 = !sse3,
-            .SDL_DISABLE_SSE4_1 = !sse4_1,
-            .SDL_DISABLE_SSE4_2 = !sse4_2,
-            .SDL_DISABLE_AVX = !avx,
-            .SDL_DISABLE_AVX2 = !avx2,
-            .SDL_DISABLE_AVX512F = !avx512f,
-            .SDL_DISABLE_MMX = !mmx,
-            .SDL_DISABLE_LSX = !lsx,
-            .SDL_DISABLE_LASX = !lasx,
-            .SDL_DISABLE_NEON = !neon,
-        },
-    );
+        .SDL_AUDIO_DISABLED = !audio,
+        .SDL_VIDEO_DISABLED = !video,
+        .SDL_GPU_DISABLED = !gpu,
+        .SDL_RENDER_DISABLED = !render,
+        .SDL_CAMERA_DISABLED = !camera,
+        .SDL_JOYSTICK_DISABLED = !joystick,
+        .SDL_HAPTIC_DISABLED = !haptic,
+        .SDL_HIDAPI_DISABLED = !hidapi,
+        .SDL_POWER_DISABLED = !power,
+        .SDL_SENSOR_DISABLED = !sensor,
+        .SDL_DIALOG_DISABLED = !dialog,
+        .SDL_THREADS_DISABLED = emscripten,
+        .SDL_AUDIO_DRIVER_ALSA = audio and alsa,
+        .SDL_AUDIO_DRIVER_ALSA_DYNAMIC = "",
+        .SDL_AUDIO_DRIVER_OPENSLES = audio and android,
+        .SDL_AUDIO_DRIVER_AAUDIO = audio and android,
+        .SDL_AUDIO_DRIVER_COREAUDIO = audio and apple,
+        .SDL_AUDIO_DRIVER_DISK = audio and diskaudio,
+        .SDL_AUDIO_DRIVER_DSOUND = audio and windows,
+        .SDL_AUDIO_DRIVER_DUMMY = audio and dummyaudio,
+        .SDL_AUDIO_DRIVER_EMSCRIPTEN = audio and emscripten,
+        .SDL_AUDIO_DRIVER_HAIKU = false,
+        .SDL_AUDIO_DRIVER_JACK = audio and jack,
+        .SDL_AUDIO_DRIVER_JACK_DYNAMIC = "",
+        .SDL_AUDIO_DRIVER_NETBSD = audio and (target.result.os.tag == .netbsd),
+        .SDL_AUDIO_DRIVER_OSS = audio and oss,
+        .SDL_AUDIO_DRIVER_PIPEWIRE = audio and pipewire,
+        .SDL_AUDIO_DRIVER_PIPEWIRE_DYNAMIC = "",
+        .SDL_AUDIO_DRIVER_PULSEAUDIO = audio and pulseaudio,
+        .SDL_AUDIO_DRIVER_PULSEAUDIO_DYNAMIC = "",
+        .SDL_AUDIO_DRIVER_SNDIO = audio and sndio,
+        .SDL_AUDIO_DRIVER_SNDIO_DYNAMIC = "",
+        .SDL_AUDIO_DRIVER_WASAPI = audio and wasapi,
+        .SDL_AUDIO_DRIVER_VITA = audio and vita,
+        .SDL_AUDIO_DRIVER_PSP = false,
+        .SDL_AUDIO_DRIVER_PS2 = false,
+        .SDL_AUDIO_DRIVER_N3DS = false,
+        .SDL_AUDIO_DRIVER_QNX = false,
+        .SDL_INPUT_LINUXEV = linux,
+        .SDL_INPUT_LINUXKD = linux,
+        .SDL_INPUT_FBSDKBIO = false,
+        .SDL_INPUT_WSCONS = false,
+        .SDL_HAVE_MACHINE_JOYSTICK_H = false,
+        .SDL_JOYSTICK_ANDROID = joystick and false,
+        .SDL_JOYSTICK_DINPUT = joystick and windows,
+        .SDL_JOYSTICK_DUMMY = false,
+        .SDL_JOYSTICK_EMSCRIPTEN = joystick and emscripten,
+        .SDL_JOYSTICK_GAMEINPUT = false,
+        .SDL_JOYSTICK_HAIKU = false,
+        .SDL_JOYSTICK_HIDAPI = joystick and hidapi,
+        .SDL_JOYSTICK_IOKIT = joystick and apple,
+        .SDL_JOYSTICK_LINUX = joystick and linux,
+        .SDL_JOYSTICK_MFI = joystick and apple,
+        .SDL_JOYSTICK_N3DS = false,
+        .SDL_JOYSTICK_PS2 = false,
+        .SDL_JOYSTICK_PSP = false,
+        .SDL_JOYSTICK_RAWINPUT = joystick and windows,
+        .SDL_JOYSTICK_USBHID = false,
+        .SDL_JOYSTICK_VIRTUAL = joystick and virtual_joystick,
+        .SDL_JOYSTICK_VITA = joystick and vita,
+        .SDL_JOYSTICK_WGI = false,
+        .SDL_JOYSTICK_XINPUT = joystick and xinput,
+        .SDL_HAPTIC_DUMMY = haptic and emscripten,
+        .SDL_HAPTIC_LINUX = haptic and linux,
+        .SDL_HAPTIC_IOKIT = haptic and apple,
+        .SDL_HAPTIC_DINPUT = haptic and windows,
+        .SDL_HAPTIC_ANDROID = haptic and android,
+        .SDL_LIBUSB_DYNAMIC = "",
+        .SDL_UDEV_DYNAMIC = "",
+        .SDL_PROCESS_DUMMY = emscripten,
+        .SDL_PROCESS_POSIX = linux or apple,
+        .SDL_PROCESS_WINDOWS = windows,
+        .SDL_SENSOR_ANDROID = sensor and android,
+        .SDL_SENSOR_COREMOTION = sensor and apple,
+        .SDL_SENSOR_WINDOWS = sensor and windows,
+        .SDL_SENSOR_DUMMY = !sensor,
+        .SDL_SENSOR_VITA = sensor and vita,
+        .SDL_SENSOR_N3DS = false,
+        .SDL_LOADSO_DLOPEN = linux or apple or emscripten,
+        .SDL_LOADSO_DUMMY = false,
+        .SDL_LOADSO_WINDOWS = windows,
+        .SDL_THREAD_GENERIC_COND_SUFFIX = windows,
+        .SDL_THREAD_GENERIC_RWLOCK_SUFFIX = windows,
+        .SDL_THREAD_PTHREAD = linux or apple or emscripten,
+        .SDL_THREAD_PTHREAD_RECURSIVE_MUTEX = linux or apple or emscripten,
+        .SDL_THREAD_PTHREAD_RECURSIVE_MUTEX_NP = false,
+        .SDL_THREAD_WINDOWS = windows,
+        .SDL_THREAD_VITA = vita,
+        .SDL_THREAD_PSP = false,
+        .SDL_THREAD_PS2 = false,
+        .SDL_THREAD_N3DS = false,
+        .SDL_TIME_UNIX = linux or apple or emscripten,
+        .SDL_TIME_WINDOWS = windows,
+        .SDL_TIME_VITA = false,
+        .SDL_TIME_PSP = false,
+        .SDL_TIME_PS2 = false,
+        .SDL_TIME_N3DS = false,
+        .SDL_TIMER_HAIKU = false,
+        .SDL_TIMER_UNIX = linux or apple or emscripten,
+        .SDL_TIMER_WINDOWS = windows,
+        .SDL_TIMER_VITA = vita,
+        .SDL_TIMER_PSP = false,
+        .SDL_TIMER_PS2 = false,
+        .SDL_TIMER_N3DS = false,
+        .SDL_VIDEO_DRIVER_ANDROID = video and android,
+        .SDL_VIDEO_DRIVER_COCOA = video and cocoa,
+        .SDL_VIDEO_DRIVER_DUMMY = video and dummyvideo,
+        .SDL_VIDEO_DRIVER_EMSCRIPTEN = emscripten,
+        .SDL_VIDEO_DRIVER_HAIKU = false,
+        .SDL_VIDEO_DRIVER_KMSDRM = kmsdrm,
+        .SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC = "",
+        .SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC_GBM = "",
+        .SDL_VIDEO_DRIVER_N3DS = false,
+        .SDL_VIDEO_DRIVER_OFFSCREEN = video and offscreen,
+        .SDL_VIDEO_DRIVER_PS2 = false,
+        .SDL_VIDEO_DRIVER_PSP = false,
+        .SDL_VIDEO_DRIVER_RISCOS = false,
+        .SDL_VIDEO_DRIVER_ROCKCHIP = false,
+        .SDL_VIDEO_DRIVER_RPI = false,
+        .SDL_VIDEO_DRIVER_UIKIT = false,
+        .SDL_VIDEO_DRIVER_VITA = false,
+        .SDL_VIDEO_DRIVER_VIVANTE = false,
+        .SDL_VIDEO_DRIVER_VIVANTE_VDK = false,
+        .SDL_VIDEO_DRIVER_OPENVR = false,
+        .SDL_VIDEO_DRIVER_WAYLAND = video and wayland,
+        .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC = "",
+        .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_CURSOR = "",
+        .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_EGL = "",
+        .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_LIBDECOR = "",
+        .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_XKBCOMMON = "",
+        .SDL_VIDEO_DRIVER_WINDOWS = windows,
+        .SDL_VIDEO_DRIVER_X11 = video and x11,
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XCURSOR = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XEXT = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XFIXES = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XINPUT2 = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XRANDR = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XSS = "",
+        .SDL_VIDEO_DRIVER_X11_HAS_XKBLOOKUPKEYSYM = video and x11,
+        .SDL_VIDEO_DRIVER_X11_SUPPORTS_GENERIC_EVENTS = video and x11,
+        .SDL_VIDEO_DRIVER_X11_XCURSOR = video and x11 and x11_xcursor,
+        .SDL_VIDEO_DRIVER_X11_XDBE = video and x11 and x11_xdbe,
+        .SDL_VIDEO_DRIVER_X11_XFIXES = video and x11 and x11_xfixes,
+        .SDL_VIDEO_DRIVER_X11_XINPUT2 = video and x11 and x11_xinput,
+        .SDL_VIDEO_DRIVER_X11_XINPUT2_SUPPORTS_MULTITOUCH = video and x11 and x11_xinput,
+        .SDL_VIDEO_DRIVER_X11_XRANDR = video and x11 and x11_xrandr,
+        .SDL_VIDEO_DRIVER_X11_XSCRNSAVER = video and x11 and x11_xscrnsaver,
+        .SDL_VIDEO_DRIVER_X11_XSHAPE = video and x11 and x11_xshape,
+        .SDL_VIDEO_DRIVER_X11_XSYNC = video and x11 and x11_xsync,
+        .SDL_VIDEO_DRIVER_QNX = false,
+        .SDL_VIDEO_RENDER_D3D = render and render_d3d,
+        .SDL_VIDEO_RENDER_D3D11 = render and render_d3d11,
+        .SDL_VIDEO_RENDER_D3D12 = render and render_d3d12,
+        .SDL_VIDEO_RENDER_GPU = render_gpu,
+        .SDL_VIDEO_RENDER_METAL = render and metal and render_metal,
+        .SDL_VIDEO_RENDER_VULKAN = render and vulkan,
+        .SDL_VIDEO_RENDER_OGL = render and opengl,
+        .SDL_VIDEO_RENDER_OGL_ES2 = render and opengles,
+        .SDL_VIDEO_RENDER_PS2 = render and false,
+        .SDL_VIDEO_RENDER_PSP = render and target.result.os.tag == .psp,
+        .SDL_VIDEO_RENDER_VITA_GXM = render and vita,
+        .SDL_VIDEO_OPENGL = render and opengl,
+        .SDL_VIDEO_OPENGL_ES = render and opengles,
+        .SDL_VIDEO_OPENGL_ES2 = render and opengles,
+        .SDL_VIDEO_OPENGL_CGL = render and opengl and apple,
+        .SDL_VIDEO_OPENGL_GLX = render and opengl and linux,
+        .SDL_VIDEO_OPENGL_WGL = render and opengl and windows,
+        .SDL_VIDEO_OPENGL_EGL = render and opengles,
+        .SDL_VIDEO_VULKAN = video and vulkan,
+        .SDL_VIDEO_METAL = video and metal,
+        .SDL_GPU_D3D11 = gpu and render_d3d11,
+        .SDL_GPU_D3D12 = gpu and render_d3d12,
+        .SDL_GPU_VULKAN = gpu and render_vulkan,
+        .SDL_GPU_METAL = gpu and metal,
+        .SDL_POWER_ANDROID = power and android,
+        .SDL_POWER_LINUX = power and linux,
+        .SDL_POWER_WINDOWS = power and windows,
+        .SDL_POWER_appleX = power and apple,
+        .SDL_POWER_UIKIT = power and false,
+        .SDL_POWER_HAIKU = false,
+        .SDL_POWER_EMSCRIPTEN = power and emscripten,
+        .SDL_POWER_HARDWIRED = false,
+        .SDL_POWER_VITA = power and vita,
+        .SDL_POWER_PSP = false,
+        .SDL_POWER_N3DS = false,
+        .SDL_FILESYSTEM_ANDROID = android,
+        .SDL_FILESYSTEM_HAIKU = false,
+        .SDL_FILESYSTEM_COCOA = apple,
+        .SDL_FILESYSTEM_DUMMY = false,
+        .SDL_FILESYSTEM_RISCOS = false,
+        .SDL_FILESYSTEM_UNIX = linux,
+        .SDL_FILESYSTEM_WINDOWS = windows,
+        .SDL_FILESYSTEM_EMSCRIPTEN = emscripten,
+        .SDL_FILESYSTEM_VITA = vita,
+        .SDL_FILESYSTEM_PSP = false,
+        .SDL_FILESYSTEM_PS2 = false,
+        .SDL_FILESYSTEM_N3DS = false,
+        .SDL_STORAGE_STEAM = windows or linux or apple,
+        .SDL_FSOPS_POSIX = linux or apple or emscripten,
+        .SDL_FSOPS_WINDOWS = windows,
+        .SDL_FSOPS_DUMMY = false,
+        .SDL_CAMERA_DRIVER_DUMMY = camera and dummycamera,
+        .SDL_CAMERA_DRIVER_DISK = camera and false,
+        .SDL_CAMERA_DRIVER_V4L2 = camera and linux,
+        .SDL_CAMERA_DRIVER_COREMEDIA = camera and apple,
+        .SDL_CAMERA_DRIVER_ANDROID = camera and android,
+        .SDL_CAMERA_DRIVER_EMSCRIPTEN = camera and emscripten,
+        .SDL_CAMERA_DRIVER_MEDIAFOUNDATION = camera and windows,
+        .SDL_CAMERA_DRIVER_PIPEWIRE = camera and pipewire,
+        .SDL_CAMERA_DRIVER_PIPEWIRE_DYNAMIC = "",
+        .SDL_CAMERA_DRIVER_VITA = camera and vita,
+        .SDL_DIALOG_DUMMY = !dialog,
+        .SDL_ALTIVEC_BLITTERS = false,
+        .DYNAPI_NEEDS_DLOPEN = linux or apple or emscripten,
+        .SDL_DISABLE_WINDOWS_IME = false,
+        .SDL_GDK_TEXTINPUT = false,
+        .SDL_IPHONE_KEYBOARD = false,
+        .SDL_IPHONE_LAUNCHSCREEN = false,
+        .SDL_VIDEO_VITA_PIB = false,
+        .SDL_VIDEO_VITA_PVR = false,
+        .SDL_VIDEO_VITA_PVR_OGL = false,
+        .SDL_LIBDECOR_VERSION_MAJOR = null,
+        .SDL_LIBDECOR_VERSION_MINOR = null,
+        .SDL_LIBDECOR_VERSION_PATCH = null,
+        .SDL_DISABLE_SSE = !sse,
+        .SDL_DISABLE_SSE2 = !sse2,
+        .SDL_DISABLE_SSE3 = !sse3,
+        .SDL_DISABLE_SSE4_1 = !sse4_1,
+        .SDL_DISABLE_SSE4_2 = !sse4_2,
+        .SDL_DISABLE_AVX = !avx,
+        .SDL_DISABLE_AVX2 = !avx2,
+        .SDL_DISABLE_AVX512F = !avx512f,
+        .SDL_DISABLE_MMX = !mmx,
+        .SDL_DISABLE_LSX = !lsx,
+        .SDL_DISABLE_LASX = !lasx,
+        .SDL_DISABLE_NEON = !neon,
+    });
 
     const uclibc_mod = b.createModule(.{
         .target = target,
@@ -655,7 +687,7 @@ pub fn build(b: *std.Build) void {
     });
     uclibc_mod.addIncludePath(sdl_dep.path("include"));
     uclibc_mod.addIncludePath(sdl_dep.path("src"));
-    uclibc_mod.addConfigHeader(config_header_h);
+    uclibc_mod.addConfigHeader(config_header_h_step.config_header);
     uclibc_mod.addCSourceFiles(.{
         .root = sdl_dep.path("src"),
         .files = &uclibc_sources,
@@ -674,9 +706,15 @@ pub fn build(b: *std.Build) void {
     if (!libc) {
         mod.linkLibrary(uclibc);
     }
+    if (dbus) {
+        if (b.lazyDependency("dbus", .{ .target = target, .optimize = optimize })) |dep| {
+            const lib = dep.artifact("dbus-1");
+            mod.linkLibrary(lib);
+        }
+    }
     mod.addIncludePath(sdl_dep.path("include"));
     mod.addIncludePath(sdl_dep.path("src"));
-    mod.addConfigHeader(config_header_h);
+    mod.addConfigHeader(config_header_h_step.config_header);
 
     if (windows) {
         mod.linkSystemLibrary("kernel32", .{});
@@ -714,6 +752,17 @@ pub fn build(b: *std.Build) void {
             .files = &linux_sources,
             .flags = &flags,
         });
+        if (dbus) {
+            mod.addCSourceFiles(.{
+                .root = sdl_dep.path("src"),
+                .files = &.{
+                    "core/linux/SDL_dbus.c",
+                    "core/linux/SDL_system_theme.c",
+                    "core/linux/SDL_fcitx.c",
+                },
+                .flags = &flags,
+            });
+        }
     }
 
     if (apple) {
@@ -936,7 +985,7 @@ pub fn build(b: *std.Build) void {
         if (linux) {
             mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/camera/v4l2"),
-                .files = &.{"/SDL_camera_v4l2.c"},
+                .files = &.{"SDL_camera_v4l2.c"},
                 .flags = &flags,
             });
         }
@@ -1031,22 +1080,26 @@ pub fn build(b: *std.Build) void {
             mod.addCSourceFiles(.{
                 .root = sdl_dep.path("src/video/wayland"),
                 .files = &.{
-                    "video/wayland/SDL_waylandclipboard.c",
-                    "video/wayland/SDL_waylandcolor.c",
-                    "video/wayland/SDL_waylanddatamanager.c",
-                    "video/wayland/SDL_waylanddyn.c",
-                    "video/wayland/SDL_waylandevents.c",
-                    "video/wayland/SDL_waylandkeyboard.c",
-                    "video/wayland/SDL_waylandmessagebox.c",
-                    "video/wayland/SDL_waylandmouse.c",
-                    "video/wayland/SDL_waylandopengles.c",
-                    "video/wayland/SDL_waylandshmbuffer.c",
-                    "video/wayland/SDL_waylandvideo.c",
-                    "video/wayland/SDL_waylandvulkan.c",
-                    "video/wayland/SDL_waylandwindow.c",
+                    "SDL_waylandclipboard.c",
+                    "SDL_waylandcolor.c",
+                    "SDL_waylanddatamanager.c",
+                    "SDL_waylanddyn.c",
+                    "SDL_waylandevents.c",
+                    "SDL_waylandkeyboard.c",
+                    "SDL_waylandmessagebox.c",
+                    "SDL_waylandmouse.c",
+                    "SDL_waylandopengles.c",
+                    "SDL_waylandshmbuffer.c",
+                    "SDL_waylandvideo.c",
+                    "SDL_waylandvulkan.c",
+                    "SDL_waylandwindow.c",
                 },
                 .flags = &flags,
             });
+            if (b.lazyDependency("egl", .{ .target = target, .optimize = optimize })) |dep| {
+                const lib = dep.artifact("egl");
+                mod.linkLibrary(lib);
+            }
         }
         if (kmsdrm) {
             mod.addCSourceFiles(.{
@@ -1494,14 +1547,11 @@ const windows_sources = .{
 };
 
 const linux_sources = .{
-    "core/linux/SDL_dbus.c",
     "core/linux/SDL_evdev_capabilities.c",
     "core/linux/SDL_evdev_kbd.c",
     "core/linux/SDL_evdev.c",
-    "core/linux/SDL_fcitx.c",
     "core/linux/SDL_ibus.c",
     "core/linux/SDL_ime.c",
-    "core/linux/SDL_system_theme.c",
     "core/linux/SDL_threadprio.c",
     "core/linux/SDL_udev.c",
     "core/unix/SDL_appid.c",
@@ -1519,7 +1569,6 @@ const linux_sources = .{
     "time/unix/SDL_systime.c",
     "timer/unix/SDL_systimer.c",
     "tray/unix/SDL_tray.c",
-    "process/posix/SDL_posixprocess.c",
 };
 
 const apple_sources = .{
