@@ -167,17 +167,16 @@ pub fn build(b: *std.Build) void {
     // const sndio_shared = b.option(bool, "SDL_SNDIO_SHARED", "Dynamically load the sndio audio API") orelse sndio and false;
     // const rpath = b.option(bool, "SDL_RPATH", "Use an rpath when linking SDL");
     // const clock_gettime = b.option(bool, "SDL_CLOCK_GETTIME", "Use clock_gettime() instead of gettimeofday()") orelse unix or android;
-    // const x11 = b.option(bool, "SDL_X11", "Use X11 video driver") orelse linux and video;
-    const x11 = false;
+    const x11 = b.option(bool, "SDL_X11", "Use X11 video driver") orelse linux and video;
     // const x11_shared = b.option(bool, "SDL_X11_SHARED", "Dynamically load X11 support") orelse x11 and false;
-    const x11_xcursor = b.option(bool, "SDL_X11_XCURSOR", "Enable Xcursor support") orelse x11;
-    const x11_xdbe = b.option(bool, "SDL_X11_XDBE", "Enable Xdbe support") orelse x11;
-    const x11_xinput = b.option(bool, "SDL_X11_XINPUT", "Enable XInput support") orelse x11;
-    const x11_xfixes = b.option(bool, "SDL_X11_XFIXES", "Enable Xfixes support") orelse x11;
-    const x11_xrandr = b.option(bool, "SDL_X11_XRANDR", "Enable Xrandr support") orelse x11;
-    const x11_xscrnsaver = b.option(bool, "SDL_X11_XSCRNSAVER", "Enable Xscrnsaver support") orelse x11;
-    const x11_xshape = b.option(bool, "SDL_X11_XSHAPE", "Enable XShape support") orelse x11;
-    const x11_xsync = b.option(bool, "SDL_X11_XSYNC", "Enable Xsync support") orelse x11;
+    const x11_xcursor = b.option(bool, "SDL_X11_XCURSOR", "Enable Xcursor support") orelse x11 and false;
+    const x11_xdbe = b.option(bool, "SDL_X11_XDBE", "Enable Xdbe support") orelse x11 and false;
+    const x11_xinput = b.option(bool, "SDL_X11_XINPUT", "Enable XInput support") orelse x11 and false;
+    const x11_xfixes = b.option(bool, "SDL_X11_XFIXES", "Enable Xfixes support") orelse x11 and false;
+    const x11_xrandr = b.option(bool, "SDL_X11_XRANDR", "Enable Xrandr support") orelse x11 and false;
+    const x11_xscrnsaver = b.option(bool, "SDL_X11_XSCRNSAVER", "Enable Xscrnsaver support") orelse x11 and false;
+    const x11_xshape = b.option(bool, "SDL_X11_XSHAPE", "Enable XShape support") orelse x11 and false;
+    const x11_xsync = b.option(bool, "SDL_X11_XSYNC", "Enable Xsync support") orelse x11 and false;
     // const wayland = b.option(bool, "SDL_WAYLAND", "Use Wayland video driver") orelse linux and video and !x11;
     const wayland = false;
     // const wayland_shared = b.option(bool, "SDL_WAYLAND_SHARED", "Dynamically load Wayland support") orelse wayland and false;
@@ -708,6 +707,24 @@ pub fn build(b: *std.Build) void {
     if (dbus) {
         if (b.lazyDependency("dbus", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
             const lib = dep.artifact("dbus-1");
+            mod.linkLibrary(lib);
+        }
+    }
+    if (x11) {
+        if (b.lazyDependency("x11", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            const lib = dep.artifact("x11");
+            mod.linkLibrary(lib);
+        }
+        if (b.lazyDependency("xext", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            const lib = dep.artifact("xext");
+            mod.linkLibrary(lib);
+        }
+        if (b.lazyDependency("xcb", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            const lib = dep.artifact("xcb");
+            mod.linkLibrary(lib);
+        }
+        if (b.lazyDependency("xorgproto", .{ .target = target, .optimize = optimize })) |dep| {
+            const lib = dep.artifact("xorgproto");
             mod.linkLibrary(lib);
         }
     }
