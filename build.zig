@@ -31,6 +31,9 @@ pub fn build(b: *std.Build) void {
     const apple = macos or ios or tvos or visionos or watchos;
     const bsdlike = target.result.os.tag == .freebsd or target.result.os.tag == .openbsd or target.result.os.tag == .netbsd;
     const emscripten = target.result.os.tag == .emscripten;
+    const psp = target.result.os.tag == .psp;
+    const ps2 = false;
+    const n3ds = target.result.os.tag == .@"3ds";
     const vita = target.result.os.tag == .vita;
 
     const android = target.result.abi.isAndroid();
@@ -522,7 +525,7 @@ pub fn build(b: *std.Build) void {
         .SDL_LOADSO_WINDOWS = windows,
         .SDL_THREAD_GENERIC_COND_SUFFIX = windows,
         .SDL_THREAD_GENERIC_RWLOCK_SUFFIX = windows,
-        .SDL_THREAD_PTHREAD = linux or apple or emscripten,
+        .SDL_THREAD_PTHREAD = !windows,
         .SDL_THREAD_PTHREAD_RECURSIVE_MUTEX = linux or apple or emscripten,
         .SDL_THREAD_PTHREAD_RECURSIVE_MUTEX_NP = false,
         .SDL_THREAD_WINDOWS = windows,
@@ -532,10 +535,10 @@ pub fn build(b: *std.Build) void {
         .SDL_THREAD_N3DS = false,
         .SDL_TIME_UNIX = linux or apple or emscripten,
         .SDL_TIME_WINDOWS = windows,
-        .SDL_TIME_VITA = false,
-        .SDL_TIME_PSP = false,
-        .SDL_TIME_PS2 = false,
-        .SDL_TIME_N3DS = false,
+        .SDL_TIME_VITA = vita,
+        .SDL_TIME_PSP = psp,
+        .SDL_TIME_PS2 = ps2,
+        .SDL_TIME_N3DS = n3ds,
         .SDL_TIMER_HAIKU = false,
         .SDL_TIMER_UNIX = linux or apple or emscripten,
         .SDL_TIMER_WINDOWS = windows,
