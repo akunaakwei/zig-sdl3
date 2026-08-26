@@ -608,7 +608,7 @@ pub fn build(b: *std.Build) void {
         .SDL_VIDEO_OPENGL_ES = render and opengles,
         .SDL_VIDEO_OPENGL_ES2 = render and opengles,
         .SDL_VIDEO_OPENGL_CGL = render and opengl and apple,
-        .SDL_VIDEO_OPENGL_GLX = render and opengl and linux,
+        .SDL_VIDEO_OPENGL_GLX = render and opengl and x11,
         .SDL_VIDEO_OPENGL_WGL = render and opengl and windows,
         .SDL_VIDEO_OPENGL_EGL = render and opengles,
         .SDL_VIDEO_VULKAN = video and vulkan,
@@ -729,6 +729,12 @@ pub fn build(b: *std.Build) void {
         if (b.lazyDependency("xorgproto", .{ .target = target, .optimize = optimize })) |dep| {
             const lib = dep.artifact("xorgproto");
             mod.linkLibrary(lib);
+        }
+        if (opengl) {
+            if (b.lazyDependency("glvnd", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+                const lib = dep.artifact("glvnd");
+                mod.linkLibrary(lib);
+            }
         }
     }
     mod.addIncludePath(sdl_dep.path("include"));

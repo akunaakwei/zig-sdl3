@@ -37,6 +37,11 @@
             .hash = "xorgproto-2025.1.0-38NRV9YKAAB8_MV39Y_a1TPHc5p55a8VAmiXDAJgU3t7",
             .lazy = true,
         },
+        .glvnd = .{
+            .url = "https://github.com/akunaakwei/zig-libglvnd/archive/4990e41990d19089493042abfb7ba5f0afc5dae6.tar.gz",
+            .hash = "libglvnd-1.7.0-mexwBEtfMwDk5BCZ1MBEdFB7djJXvmnYt2n4EvTqceX2",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
