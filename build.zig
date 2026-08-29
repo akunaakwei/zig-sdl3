@@ -176,7 +176,7 @@ pub fn build(b: *std.Build) void {
     const x11_xdbe = b.option(bool, "SDL_X11_XDBE", "Enable Xdbe support") orelse x11;
     const x11_xinput = b.option(bool, "SDL_X11_XINPUT", "Enable XInput support") orelse x11;
     const x11_xfixes = b.option(bool, "SDL_X11_XFIXES", "Enable Xfixes support") orelse x11;
-    const x11_xrandr = b.option(bool, "SDL_X11_XRANDR", "Enable Xrandr support") orelse x11 and false;
+    const x11_xrandr = b.option(bool, "SDL_X11_XRANDR", "Enable Xrandr support") orelse x11;
     const x11_xscrnsaver = b.option(bool, "SDL_X11_XSCRNSAVER", "Enable Xscrnsaver support") orelse x11 and false;
     const x11_xshape = b.option(bool, "SDL_X11_XSHAPE", "Enable XShape support") orelse x11 and false;
     const x11_xsync = b.option(bool, "SDL_X11_XSYNC", "Enable Xsync support") orelse x11 and false;
@@ -749,6 +749,16 @@ pub fn build(b: *std.Build) void {
             }
             if (b.lazyDependency("xi", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
                 const lib = dep.artifact("xi");
+                mod.linkLibrary(lib);
+            }
+        }
+        if (x11_xrandr) {
+            if (b.lazyDependency("xrandr", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+                const lib = dep.artifact("xrandr");
+                mod.linkLibrary(lib);
+            }
+            if (b.lazyDependency("xrender", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+                const lib = dep.artifact("xrender");
                 mod.linkLibrary(lib);
             }
         }

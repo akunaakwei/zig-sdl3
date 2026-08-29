@@ -57,6 +57,16 @@
             .hash = "libxi-1.8.3-F55ZP-wTAADr_aVPLymv_hrFwvIHKXukO1uli7ka_jmZ",
             .lazy = true,
         },
+        .xrandr = .{
+            .url = "https://github.com/akunaakwei/zig-libxrandr/archive/03e6d66087860422b514a23ce67e2f20cba7585b.tar.gz",
+            .hash = "libxrandr-1.0.12-oKmf0LcQAADowSvKrkCmV_P3O0CIjBWcFQf0GoxI7xIu",
+            .lazy = true,
+        },
+        .xrender = .{
+            .url = "https://github.com/akunaakwei/zig-libxrender/archive/00cf03e3675c7d0325aa3b3f6d9ca95af338032d.zip",
+            .hash = "libxrender-0.9.12-U_rRgTkNAACQP-7cB1KFD_054BjT_67rN4CkBRWMMBAJ",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
