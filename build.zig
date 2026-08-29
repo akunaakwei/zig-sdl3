@@ -172,7 +172,7 @@ pub fn build(b: *std.Build) void {
     // const clock_gettime = b.option(bool, "SDL_CLOCK_GETTIME", "Use clock_gettime() instead of gettimeofday()") orelse unix or android;
     const x11 = b.option(bool, "SDL_X11", "Use X11 video driver") orelse linux and video;
     // const x11_shared = b.option(bool, "SDL_X11_SHARED", "Dynamically load X11 support") orelse x11 and false;
-    const x11_xcursor = b.option(bool, "SDL_X11_XCURSOR", "Enable Xcursor support") orelse x11 and false;
+    const x11_xcursor = b.option(bool, "SDL_X11_XCURSOR", "Enable Xcursor support") orelse x11;
     const x11_xdbe = b.option(bool, "SDL_X11_XDBE", "Enable Xdbe support") orelse x11 and false;
     const x11_xinput = b.option(bool, "SDL_X11_XINPUT", "Enable XInput support") orelse x11 and false;
     const x11_xfixes = b.option(bool, "SDL_X11_XFIXES", "Enable Xfixes support") orelse x11 and false;
@@ -733,6 +733,12 @@ pub fn build(b: *std.Build) void {
         if (opengl) {
             if (b.lazyDependency("glvnd", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
                 const lib = dep.artifact("glvnd");
+                mod.linkLibrary(lib);
+            }
+        }
+        if (x11_xcursor) {
+            if (b.lazyDependency("xcursor", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+                const lib = dep.artifact("xcursor");
                 mod.linkLibrary(lib);
             }
         }

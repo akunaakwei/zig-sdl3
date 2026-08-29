@@ -42,6 +42,11 @@
             .hash = "libglvnd-1.7.0-mexwBEtfMwDk5BCZ1MBEdFB7djJXvmnYt2n4EvTqceX2",
             .lazy = true,
         },
+        .xcursor = .{
+            .url = "https://github.com/akunaakwei/zig-libxcursor/archive/a086ec046cb46a7bc0cb29585ec82c4bd0244040.tar.gz",
+            .hash = "libxcursor-1.2.3-hkUpxBARAAB55UpQMK_3B1PR-KKDN2PINgc_epkTc_k8",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
