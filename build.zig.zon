@@ -47,6 +47,16 @@
             .hash = "libxcursor-1.2.3-hkUpxBARAAB55UpQMK_3B1PR-KKDN2PINgc_epkTc_k8",
             .lazy = true,
         },
+        .xfixes = .{
+            .url = "https://github.com/akunaakwei/zig-libxfixes/archive/258989eb223eec7a0c9f016b303b1973459453a1.tar.gz",
+            .hash = "libxfixes-6.0.2-bp6sjMAMAAArOAF2gCR-sHxB4-H8PERu3Z9KMoe3NkcO",
+            .lazy = true,
+        },
+        .xi = .{
+            .url = "https://github.com/akunaakwei/zig-libxi/archive/698e0901b8aa9f508c080b88e9c38aaa4aba3410.tar.gz",
+            .hash = "libxi-1.8.3-F55ZP-wTAADr_aVPLymv_hrFwvIHKXukO1uli7ka_jmZ",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
