@@ -67,6 +67,11 @@
             .hash = "libxrender-0.9.12-U_rRgTkNAACQP-7cB1KFD_054BjT_67rN4CkBRWMMBAJ",
             .lazy = true,
         },
+        .xscrnsaver = .{
+            .url = "https://github.com/akunaakwei/zig-libxscrnsaver/archive/b228a7f60f2926052f4eaf1dd0c54ee4667705e7.tar.gz",
+            .hash = "libxscrnsaver-1.2.5-k71E4FQOAABvXq6F_E2PSOwgxFmF6gZyjduv0ojd9An0",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
