@@ -179,7 +179,7 @@ pub fn build(b: *std.Build) void {
     const x11_xrandr = b.option(bool, "SDL_X11_XRANDR", "Enable Xrandr support") orelse x11;
     const x11_xscrnsaver = b.option(bool, "SDL_X11_XSCRNSAVER", "Enable Xscrnsaver support") orelse x11;
     const x11_xshape = b.option(bool, "SDL_X11_XSHAPE", "Enable XShape support") orelse x11;
-    const x11_xsync = b.option(bool, "SDL_X11_XSYNC", "Enable Xsync support") orelse x11 and false;
+    const x11_xsync = b.option(bool, "SDL_X11_XSYNC", "Enable Xsync support") orelse x11;
     // const wayland = b.option(bool, "SDL_WAYLAND", "Use Wayland video driver") orelse linux and video and !x11;
     const wayland = false;
     // const wayland_shared = b.option(bool, "SDL_WAYLAND_SHARED", "Dynamically load Wayland support") orelse wayland and false;
