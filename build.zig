@@ -353,12 +353,12 @@ pub fn build(b: *std.Build) void {
     config_header_h_step.addHaveFunction("HAVE_FLOORF", "&floorf", &.{"math.h"});
     config_header_h_step.addHaveFunction("HAVE_FMOD", "&fmod", &.{"math.h"});
     config_header_h_step.addHaveFunction("HAVE_FMODF", "&fmodf", &.{"math.h"});
-    config_header_h_step.addHaveFunction("HAVE_ISINF", "isinf(0)", &.{"math.h"});
-    config_header_h_step.addHaveFunction("HAVE_ISINFF", "isinff(0)", &.{"math.h"});
-    config_header_h_step.addHaveFunction("HAVE_ISINF_FLOAT_MACRO", "isinf(0)", &.{"math.h"});
-    config_header_h_step.addHaveFunction("HAVE_ISNAN", "isnan(0)", &.{"math.h"});
-    config_header_h_step.addHaveFunction("HAVE_ISNANF", "isnanf(0)", &.{"math.h"});
-    config_header_h_step.addHaveFunction("HAVE_ISNAN_FLOAT_MACRO", "isnan(0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISINF", "isinf(0.0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISINFF", "isinff(0.0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISINF_FLOAT_MACRO", "isinf(0.0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISNAN", "isnan(0.0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISNANF", "isnanf(0.0)", &.{"math.h"});
+    config_header_h_step.addHaveFunction("HAVE_ISNAN_FLOAT_MACRO", "isnan(0.0)", &.{"math.h"});
     config_header_h_step.addHaveFunction("HAVE_LOG", "&log", &.{"math.h"});
     config_header_h_step.addHaveFunction("HAVE_LOGF", "&logf", &.{"math.h"});
     config_header_h_step.addHaveFunction("HAVE_LOG10", "&log10", &.{"math.h"});
