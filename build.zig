@@ -42,6 +42,8 @@ pub fn build(b: *std.Build) void {
     const legalize_step = b.step("legalize", "check compile time options for misconfigurations");
 
     const linkage = b.option(std.builtin.LinkMode, "linkage", "Linkage type for the library") orelse .static;
+    const pic = b.option(bool, "pic", "Enable PIC") orelse (if (linkage == .dynamic) true else null);
+
     const audio = b.option(bool, "SDL_AUDIO", "Enable SDL audio support") orelse true;
     const video = b.option(bool, "SDL_VIDEO", "Enable SDL video support") orelse true;
     const gpu = b.option(bool, "SDL_GPU", "Enable SDL GPU support") orelse video;
@@ -171,7 +173,7 @@ pub fn build(b: *std.Build) void {
     // const rpath = b.option(bool, "SDL_RPATH", "Use an rpath when linking SDL");
     // const clock_gettime = b.option(bool, "SDL_CLOCK_GETTIME", "Use clock_gettime() instead of gettimeofday()") orelse unix or android;
     const x11 = b.option(bool, "SDL_X11", "Use X11 video driver") orelse linux and video;
-    // const x11_shared = b.option(bool, "SDL_X11_SHARED", "Dynamically load X11 support") orelse x11 and false;
+    const x11_shared = b.option(bool, "SDL_X11_SHARED", "Dynamically load X11 support") orelse x11 and false;
     const x11_xcursor = b.option(bool, "SDL_X11_XCURSOR", "Enable Xcursor support") orelse x11;
     const x11_xdbe = b.option(bool, "SDL_X11_XDBE", "Enable Xdbe support") orelse x11;
     const x11_xinput = b.option(bool, "SDL_X11_XINPUT", "Enable XInput support") orelse x11;
@@ -294,8 +296,8 @@ pub fn build(b: *std.Build) void {
     config_header_h_step.addHaveFunction("HAVE_MEMCMP", "&memcmp", &.{"string.h"});
     config_header_h_step.addHaveFunction("HAVE_WCSLEN", "&wcslen", &.{"wchar.h"});
     config_header_h_step.addHaveFunction("HAVE_WCSNLEN", "&wcsnlen", &.{"wchar.h"});
-    config_header_h_step.addHaveFunction("HAVE_WCSLCPY", "&wcslcpy", &.{"wchar.h"});
-    config_header_h_step.addHaveFunction("HAVE_WCSLCAT", "&wcslcat", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSLCPY", "&wcslcpy222", &.{"wchar.h"});
+    config_header_h_step.addHaveFunction("HAVE_WCSLCAT", "&wcslcat222", &.{"wchar.h"});
     config_header_h_step.addHaveFunction("HAVE_WCSSTR", "&wcsstr", &.{"wchar.h"});
     config_header_h_step.addHaveFunction("HAVE_WCSCMP", "&wcscmp", &.{"wchar.h"});
     config_header_h_step.addHaveFunction("HAVE_WCSNCMP", "&wcsncmp", &.{"wchar.h"});
@@ -574,13 +576,13 @@ pub fn build(b: *std.Build) void {
         .SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_XKBCOMMON = "",
         .SDL_VIDEO_DRIVER_WINDOWS = windows,
         .SDL_VIDEO_DRIVER_X11 = video and x11,
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC = "",
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XCURSOR = "",
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XEXT = "",
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XFIXES = "",
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XINPUT2 = "",
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XRANDR = "",
-        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XSS = "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC = if (x11 and x11_shared) "\"libX11.so.6\"" else "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XCURSOR = if (x11 and x11_shared) "\"libXcursor.so.1\"" else "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XEXT = if (x11 and x11_shared) "\"libXext.so.6\"" else "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XFIXES = if (x11 and x11_shared) "\"libXfixes.so.3\"" else "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XINPUT2 = if (x11 and x11_shared) "\"libXi.so.6\"" else "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XRANDR = if (x11 and x11_shared) "\"libXrandr.so.2\"" else "",
+        .SDL_VIDEO_DRIVER_X11_DYNAMIC_XSS = if (x11 and x11_shared) "\"libXss.so.1\"" else "",
         .SDL_VIDEO_DRIVER_X11_HAS_XKBLOOKUPKEYSYM = video and x11,
         .SDL_VIDEO_DRIVER_X11_SUPPORTS_GENERIC_EVENTS = video and x11,
         .SDL_VIDEO_DRIVER_X11_XCURSOR = video and x11 and x11_xcursor,
@@ -685,6 +687,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .link_libc = false,
+        .pic = pic,
     });
     uclibc_mod.addIncludePath(sdl_dep.path("include"));
     uclibc_mod.addIncludePath(sdl_dep.path("src"));
@@ -703,69 +706,114 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .link_libc = libc,
+        .pic = pic,
     });
     if (!libc) {
         mod.linkLibrary(uclibc);
     }
     if (dbus) {
-        if (b.lazyDependency("dbus", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+        if (b.lazyDependency("dbus", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
             const lib = dep.artifact("dbus-1");
             mod.linkLibrary(lib);
         }
     }
     if (x11) {
-        if (b.lazyDependency("x11", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+        if (b.lazyDependency("x11", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
             const lib = dep.artifact("x11");
-            mod.linkLibrary(lib);
+            if (x11_shared) {
+                mod.addIncludePath(lib.getEmittedIncludeTree());
+            } else {
+                mod.linkLibrary(lib);
+            }
         }
-        if (b.lazyDependency("xext", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+        if (b.lazyDependency("xext", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
             const lib = dep.artifact("xext");
-            mod.linkLibrary(lib);
+            if (x11_shared) {
+                mod.addIncludePath(lib.getEmittedIncludeTree());
+            } else {
+                mod.linkLibrary(lib);
+            }
         }
-        if (b.lazyDependency("xcb", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+        if (b.lazyDependency("xcb", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
             const lib = dep.artifact("xcb");
-            mod.linkLibrary(lib);
+            if (x11_shared) {
+                mod.addIncludePath(lib.getEmittedIncludeTree());
+            } else {
+                mod.linkLibrary(lib);
+            }
         }
         if (b.lazyDependency("xorgproto", .{ .target = target, .optimize = optimize })) |dep| {
             const lib = dep.artifact("xorgproto");
-            mod.linkLibrary(lib);
+            if (x11_shared) {
+                mod.addIncludePath(lib.getEmittedIncludeTree());
+            } else {
+                mod.linkLibrary(lib);
+            }
         }
         if (opengl) {
-            if (b.lazyDependency("glvnd", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            if (b.lazyDependency("glvnd", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
                 const lib = dep.artifact("glvnd");
-                mod.linkLibrary(lib);
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
         }
         if (x11_xcursor) {
-            if (b.lazyDependency("xcursor", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            if (b.lazyDependency("xcursor", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
                 const lib = dep.artifact("xcursor");
-                mod.linkLibrary(lib);
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
         }
         if (x11_xinput or x11_xfixes) {
-            if (b.lazyDependency("xfixes", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            if (b.lazyDependency("xfixes", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
                 const lib = dep.artifact("xfixes");
-                mod.linkLibrary(lib);
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
-            if (b.lazyDependency("xi", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            if (b.lazyDependency("xi", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
                 const lib = dep.artifact("xi");
-                mod.linkLibrary(lib);
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
         }
         if (x11_xrandr) {
-            if (b.lazyDependency("xrandr", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            if (b.lazyDependency("xrandr", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
                 const lib = dep.artifact("xrandr");
-                mod.linkLibrary(lib);
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
-            if (b.lazyDependency("xrender", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
+            if (b.lazyDependency("xrender", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
                 const lib = dep.artifact("xrender");
-                mod.linkLibrary(lib);
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
         }
         if (x11_xscrnsaver) {
-            if (b.lazyDependency("xscrnsaver", .{ .target = target, .optimize = optimize, .linkage = linkage })) |dep| {
-                const lib = dep.artifact("xscrnsaver");
-                mod.linkLibrary(lib);
+            if (b.lazyDependency("xscrnsaver", .{ .target = target, .optimize = optimize, .pic = pic })) |dep| {
+                const lib = dep.artifact("Xss");
+                if (x11_shared) {
+                    mod.addIncludePath(lib.getEmittedIncludeTree());
+                } else {
+                    mod.linkLibrary(lib);
+                }
             }
         }
     }
